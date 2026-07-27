@@ -88,7 +88,9 @@ file.
 ## Development
 
 There is no build step. `index.html` is the entire application; edit it and
-reload.
+reload. The only other files it serves are `manifest.webmanifest` and `icons/`,
+which exist so the game can be installed to a home screen — the game itself
+runs from the single file.
 
 ```bash
 npm install          # jsdom, for the shell tests only
@@ -119,6 +121,14 @@ their copies match.
 GitHub Pages serves this as-is. Settings → Pages → deploy from your default
 branch, root folder. `index.html` is at the root, and `.nojekyll` stops Jekyll
 from touching anything.
+
+Note that the Pages URL is case-sensitive: for a repository named `Cadence` the
+site is at `/Cadence/`, and `/cadence/` returns 404.
+
+Installing to a home screen uses `manifest.webmanifest` and `icons/`. The
+favicon is also inlined as a `data:` URI in `index.html`, so the tab icon
+survives even if the icon files are missing; `icons/favicon.svg` is the same
+artwork kept as an editable source.
 
 ## Music
 
