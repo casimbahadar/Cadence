@@ -12,8 +12,8 @@ to match your repository name)*
 
 ## What it does
 
-Notes fall down four lanes and you tap them as they cross the line. Twenty-four
-songs are built in, and you can add your own three different ways.
+Notes fall down four lanes and you tap them as they cross the line. 176 songs are
+built in, and you can add your own three different ways.
 
 - **Three difficulties** per song, generated from the source material rather than
   hand-authored — Easy, Normal and Hard are different selections of the same
@@ -122,8 +122,9 @@ from touching anything.
 
 ## Music
 
-All twenty-four bundled songs are arrangements of **public-domain** works,
-sequenced for this project:
+176 songs ship with the game, in two groups.
+
+**24 arrangements of public-domain works**, sequenced for this project:
 
 Ode to Joy · Twinkle Variations · Minuet in G · Greensleeves · Korobeiniki · In
 the Hall of the Mountain King · The Entertainer · Für Elise · Canon in D · Eine
@@ -133,8 +134,27 @@ Itsuki Lullaby · Kuroda Bushi · Rokudan no Shirabe · The General's Command ·
 Ambush from Ten Sides
 
 The underlying compositions are out of copyright; the arrangements are original
-to this project. Music you import yourself is yours, stays on your device, and
-is never redistributed by this app.
+to this project.
+
+**152 original compositions** written in [Musical Forge
+Studio](https://github.com/casimbahadar/Musical-Forge-Studio) — 52 Lumoria
+themes and a 100-track Forge Collection. These are original work, not
+arrangements of anything.
+
+Music you import yourself is yours, stays on your device, and is never
+redistributed by this app.
+
+### How the library is stored
+
+The 152 originals are packed as delta-encoded integers rather than note objects
+— about 2.5 MB raw, roughly 150 KB over the wire once gzipped. Decoding all of
+them up front would cost ~320 ms, so each song's notes are built lazily the
+first time something asks for them; the library screen only ever reads titles
+and durations.
+
+This block sits deliberately *outside* the `CORE` markers. Song data is content,
+not engine logic, so Cadence Heroes supplies its own soundtrack rather than
+inheriting this one.
 
 ## License
 
