@@ -4,9 +4,9 @@ Three layers, because they catch different classes of bug. Run all three before
 calling a change done.
 
 ```
-node cadence.tests.mjs                     # CORE logic          — 762 assertions
-node shell.tests.mjs                       # DOM / storage / UI  —  62 assertions
-node detector-metrics.mjs <audio-file>     # chart quality on real audio
+node tests/cadence.tests.mjs                     # CORE logic          — 762 assertions
+node tests/shell.tests.mjs                       # DOM / storage / UI  —  62 assertions
+node tests/detector-metrics.mjs <audio-file>     # chart quality on real audio
 ```
 
 Both test files exit non-zero on failure, so they work in a pipeline.
@@ -14,7 +14,7 @@ Both test files exit non-zero on failure, so they work in a pipeline.
 ## Setup
 
 ```
-npm install jsdom          # shell.tests.mjs only
+npm install                # jsdom, for shell.tests.mjs only
 ```
 
 `detector-metrics.mjs` needs `ffmpeg` on PATH to accept mp3/m4a/wav. Without it,
@@ -24,8 +24,9 @@ pass a raw mono float32 @ 44100 file (`.f32`) instead:
 ffmpeg -i song.mp3 -ac 1 -ar 44100 -f f32le song.f32
 ```
 
-All three default to `index.html` in the working directory. Pass `--build
-cadence.html` to `detector-metrics.mjs` to point at a different file.
+All three resolve `index.html` at the repository root, relative to their own
+location rather than the working directory, so they run from anywhere. Pass
+`--build cadence.html` to `detector-metrics.mjs` to point at a different file.
 
 ## 1. `cadence.tests.mjs` — CORE
 
