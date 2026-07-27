@@ -118,7 +118,14 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--
   padding:5px 11px;font-size:13px;cursor:pointer}
 #stage{flex:1;position:relative;min-height:0}
 #gamecanvas{position:absolute;inset:0;width:100%;height:100%}
-#pads{display:none;flex-shrink:0;height:92px;gap:6px;padding:6px;background:var(--ink2)}
+/* The bottom strip of an iPhone screen belongs to the system: the home
+   indicator lives there, and on iOS 18 a double-tap in it opens Type to Siri.
+   Rhythm tapping on pads flush with that edge strays into it. The extra height
+   is a dead zone below the pads, not extra pad — .pad stays 80px, and taps in
+   the padding hit no .pad so they are ignored. */
+#pads{display:none;flex-shrink:0;gap:6px;background:var(--ink2);
+  height:calc(92px + max(12px, env(safe-area-inset-bottom)));
+  padding:6px 6px calc(6px + max(12px, env(safe-area-inset-bottom)))}
 #scr-play.ingame #pads{display:flex}
 .pad{flex:1;border-radius:12px;border:none;opacity:.85;cursor:pointer}
 .pad:active{opacity:1;filter:brightness(1.3)}
@@ -2972,7 +2979,7 @@ function roundRect(x, y, w, h, r) {
 }
 
 /* pause / quit */
-$("pausebtn").addEventListener("click", () => {
+function pauseGame() {
   if (!G.playing || G.paused) return;
   G.paused = true; G.pausedAt = Audio2.now();
   activePtr.clear();
@@ -2983,11 +2990,23 @@ $("pausebtn").addEventListener("click", () => {
   for (const id of ["syncrow", "synchint", "clicksbtn", "clickshint"]) $(id).style.display = "none";
   $("clicksbtn").textContent = "Note clicks: " + (G.noteClicks ? "On" : "Off");
   $("sync-val").textContent = Math.round(pairOffset() * 1000) + " ms";
-  
+
   $("pauseoverlay").classList.add("open");
+}
+$("pausebtn").addEventListener("click", pauseGame);
+
+/* Backgrounding the tab suspends the AudioContext, and the whole clock is
+   ctx.currentTime — so on return it reads frozen, notes stop falling, and only
+   whatever sat near the line stays tappable. Pause on the way out instead: the
+   resume path already re-arms the scheduler and reseats the audio, and the
+   Resume tap is the user gesture iOS needs to let the context restart. */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pauseGame();
 });
+
 $("resumebtn").addEventListener("click", () => {
   if (!G.paused) return;
+  Audio2.ensure();   // iOS leaves the context suspended/interrupted after a background
   const gap = Audio2.now() - G.pausedAt;
   G.startAt += gap; G.endAt += gap;
   // re-arm scheduling from current position (skip anything already past)
