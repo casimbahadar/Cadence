@@ -1,0 +1,21 @@
+{
+  "name": "cadence",
+  "version": "1.0.0",
+  "description": "A mobile-first rhythm game that charts any song you give it. Single file, no dependencies, no build step.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/cadence.tests.mjs && node tests/shell.tests.mjs",
+    "test:core": "node tests/cadence.tests.mjs",
+    "test:shell": "node tests/shell.tests.mjs",
+    "metrics": "node --max-old-space-size=3000 tests/detector-metrics.mjs",
+    "core-hash": "node tests/core-hash.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

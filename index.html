@@ -1,0 +1,3530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>Cadence</title>
+<style>
+:root{
+  --ink:#0b1026; --ink2:#141a38; --panel:#1c2247; --panel2:#232a55;
+  --text:#f3efe4; --dim:#9aa0c3;
+  --l0:#f5c34d; --l1:#f2705b; --l2:#3fc9b0; --l3:#a78bfa;
+  --gold:#f5c34d;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--ink);color:var(--text);
+  font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#app{height:100%;display:flex;flex-direction:column;position:relative}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+
+/* ---------- Title ---------- */
+#scr-title{background:
+  radial-gradient(120% 70% at 50% -10%, #232a55 0%, var(--ink) 60%);
+  align-items:center;justify-content:center;text-align:center;padding:24px}
+.wordmark{font-size:52px;font-weight:800;letter-spacing:.14em;margin-bottom:4px;
+  background:linear-gradient(180deg,#fff 20%,var(--gold) 90%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--dim);font-size:14px;letter-spacing:.08em;margin-bottom:26px}
+#staff{width:min(340px,86vw);height:56px;margin-bottom:26px}
+.modecard{width:min(340px,86vw);background:var(--panel);border:1px solid #2e3670;
+  border-radius:14px;padding:16px 18px;margin-bottom:12px;text-align:left;cursor:pointer}
+.modecard:active{background:var(--panel2)}
+.modecard h2{font-size:19px;margin-bottom:3px}
+.modecard p{font-size:12.5px;color:var(--dim);line-height:1.4}
+.modecard.locked{opacity:.6}
+.modecard .lock{float:right;font-size:11px;color:var(--gold);border:1px solid var(--gold);
+  border-radius:20px;padding:2px 9px;margin-top:2px}
+.smallrow{display:flex;gap:10px;width:min(340px,86vw)}
+.smallbtn{flex:1;background:var(--ink2);border:1px solid #2e3670;border-radius:11px;
+  padding:12px 4px;color:var(--dim);font-size:13px;text-align:center;cursor:pointer}
+.smallbtn:active{color:var(--text)}
+.credit{position:absolute;bottom:12px;font-size:11px;color:#565d85;width:100%;text-align:center}
+
+/* ---------- Generic chrome ---------- */
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;flex-shrink:0}
+.topbar h1{font-size:20px;font-weight:700;flex:1}
+.back{background:var(--ink2);border:1px solid #2e3670;color:var(--text);border-radius:10px;
+  padding:8px 14px;font-size:14px;cursor:pointer}
+.back:disabled{opacity:.35}
+.btn{background:var(--gold);color:#1a1508;border:none;border-radius:12px;font-weight:700;
+  padding:14px 18px;font-size:16px;cursor:pointer;width:100%}
+.btn.ghost{background:var(--ink2);color:var(--text);border:1px solid #2e3670}
+.btn:disabled{opacity:.4}
+.note-dim{font-size:12.5px;color:var(--dim);line-height:1.5}
+
+/* ---------- Song select ---------- */
+.songrow{background:var(--panel);border:1px solid #2e3670;border-radius:13px;
+  padding:13px 15px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px}
+.songrow:active{background:var(--panel2)}
+.songrow.picked{border-color:var(--gold);background:var(--panel2)}
+.songrow.locked{opacity:.45}
+.songrow .tick{width:22px;height:22px;border-radius:7px;border:2px solid #3a4382;
+  margin-right:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--ink)}
+.songrow.picked .tick{background:var(--gold);border-color:var(--gold)}
+.songrow .meta{flex:1;min-width:0}
+.songrow .t{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.songrow .c{font-size:12px;color:var(--dim);margin-top:2px}
+.songrow .best{font-size:12px;color:var(--gold);text-align:right;line-height:1.35;flex-shrink:0}
+.badge{display:inline-block;font-size:10.5px;border-radius:6px;padding:1px 6px;margin-right:5px;
+  background:#2e3670;color:var(--dim)}
+.badge.import{background:#3fc9b022;color:var(--l2)}
+
+/* ---------- Difficulty sheet ---------- */
+#diffsheet{position:absolute;inset:0;background:#0009;display:none;align-items:flex-end;z-index:30}
+#diffsheet.open{display:flex}
+.sheet{background:var(--panel);border-radius:18px 18px 0 0;width:100%;padding:20px 18px 26px}
+.sheet h3{font-size:18px;margin-bottom:2px}
+.sheet .sub{font-size:12.5px;color:var(--dim);margin-bottom:14px}
+.diffbtn{display:flex;justify-content:space-between;align-items:center;width:100%;
+  background:var(--ink2);border:1px solid #2e3670;border-radius:12px;padding:14px 16px;
+  margin-bottom:9px;color:var(--text);font-size:16px;font-weight:600;cursor:pointer}
+.diffbtn small{color:var(--dim);font-weight:400;font-size:12px}
+.diffbtn:active{background:var(--panel2)}
+
+/* ---------- Gameplay ---------- */
+#scr-play{background:var(--ink)}
+#playtop{display:none;align-items:center;padding:8px 14px;gap:10px;flex-shrink:0;font-size:13px}
+#progressbar{display:none;height:3px;background:#232a55;flex-shrink:0}
+#scr-play.ingame #progressbar{display:block}
+#progressfill{height:100%;width:0%;background:var(--gold)}
+#scr-play.ingame #playtop{display:flex}
+#hud-song{flex:1;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hud-combo{font-weight:800;color:var(--gold);min-width:64px;text-align:right}
+#hud-score{font-weight:700;min-width:70px;text-align:right}
+#pausebtn{background:var(--ink2);border:1px solid #2e3670;color:var(--dim);border-radius:8px;
+  padding:5px 11px;font-size:13px;cursor:pointer}
+#stage{flex:1;position:relative;min-height:0}
+#gamecanvas{position:absolute;inset:0;width:100%;height:100%}
+#pads{display:none;flex-shrink:0;height:92px;gap:6px;padding:6px;background:var(--ink2)}
+#scr-play.ingame #pads{display:flex}
+.pad{flex:1;border-radius:12px;border:none;opacity:.85;cursor:pointer}
+.pad:active{opacity:1;filter:brightness(1.3)}
+#stage,#gamecanvas,#pads,.pad{touch-action:none}
+#fortwrap{height:7px;background:#1a1f36;cursor:pointer}
+#fortbar{height:100%;width:0;background:linear-gradient(90deg,#8a6a1d,#f5c34d);transition:width .18s linear}
+#fortbar.full{box-shadow:0 0 8px #f5c34dcc;animation:fortpulse 0.9s ease-in-out infinite}
+#fortbar.active{background:linear-gradient(90deg,#f5c34d,#ffe9a8)}
+@keyframes fortpulse{50%{filter:brightness(1.5)}}
+#countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:64px;font-weight:800;color:var(--gold);pointer-events:none;text-shadow:0 0 30px #f5c34d66}
+#judgepop{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:26px;font-weight:800;
+  pointer-events:none;opacity:0;transition:opacity .12s}
+#pauseoverlay{position:absolute;inset:0;background:#0b1026ee;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;z-index:20;padding:0 40px}
+#pauseoverlay.open{display:flex}
+#pauseoverlay h2{font-size:26px;margin-bottom:6px}
+
+/* ---------- Results ---------- */
+#scr-results{background:radial-gradient(120% 70% at 50% -10%, #232a55 0%, var(--ink) 60%);
+  align-items:center;justify-content:center;text-align:center;padding:24px}
+#res-grade{font-size:88px;font-weight:800;line-height:1;
+  background:linear-gradient(180deg,#fff 10%,var(--gold) 90%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#res-song{color:var(--dim);font-size:14px;margin:6px 0 18px}
+.resgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(320px,84vw);margin-bottom:18px}
+.rescell{background:var(--panel);border:1px solid #2e3670;border-radius:11px;padding:10px}
+.rescell .k{font-size:11px;color:var(--dim);letter-spacing:.06em}
+.rescell .v{font-size:20px;font-weight:700;margin-top:2px}
+#res-newbest{color:var(--gold);font-size:13px;font-weight:700;margin-bottom:14px;height:16px}
+.rescol{display:flex;flex-direction:column;gap:10px;width:min(320px,84vw)}
+
+/* ---------- Calibration ---------- */
+#scr-calib{align-items:center;justify-content:center;text-align:center;padding:28px}
+#calib-big{font-size:22px;font-weight:700;margin:18px 0 8px}
+#calib-count{font-size:15px;color:var(--dim);margin-bottom:22px;min-height:20px}
+#calib-circle{width:150px;height:150px;border-radius:50%;background:var(--panel);
+  border:3px solid var(--gold);margin:0 auto 26px;display:flex;align-items:center;
+  justify-content:center;font-size:40px;cursor:pointer;transition:transform .06s}
+#calib-circle:active{transform:scale(.94)}
+
+/* ---------- Import & Settings ---------- */
+.card{background:var(--panel);border:1px solid #2e3670;border-radius:13px;padding:15px;margin-bottom:12px}
+.card h3{font-size:15.5px;margin-bottom:6px}
+.filebtn{display:block;background:var(--ink2);border:1px dashed #3d468a;border-radius:11px;
+  padding:14px;text-align:center;color:var(--gold);font-size:14px;font-weight:600;cursor:pointer;margin-top:10px}
+input[type=file]{display:none}
+.segrow{display:flex;gap:8px;margin-top:10px}
+.seg{flex:1;background:var(--ink2);border:1px solid #2e3670;border-radius:10px;padding:11px 4px;
+  text-align:center;font-size:13.5px;color:var(--dim);cursor:pointer}
+.seg.sel{color:#1a1508;background:var(--gold);border-color:var(--gold);font-weight:700}
+#toast{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:#000c;
+  border:1px solid #2e3670;color:var(--text);border-radius:10px;padding:10px 16px;font-size:13.5px;
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:50;max-width:86vw;text-align:center}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TITLE -->
+<div class="screen active" id="scr-title">
+  <div class="wordmark">CADENCE</div>
+  <div class="tagline">TAP THE MUSIC AS IT FALLS</div>
+  <svg id="staff" viewBox="0 0 340 56" aria-hidden="true"></svg>
+  <div class="modecard" id="btn-arcade">
+    <h2>Cadence</h2>
+    <p>Pure rhythm. Pick a song, tap the lanes, chase the S rank.</p>
+  </div>
+  <div class="modecard" id="btn-event" style="border-color:#8a6d1f">
+    <span class="lock">WEEKLY</span>
+    <h2>Weekly Event</h2>
+    <p id="evt-line">Loading this week's challenge…</p>
+  </div>
+  <div class="modecard locked" id="btn-heroes">
+    <span class="lock">IN DEVELOPMENT</span>
+    <h2>Cadence Heroes</h2>
+    <p>A separate adventure with its own songs and progression.</p>
+  </div>
+  <div class="smallrow">
+    <div class="smallbtn" id="btn-import">Import songs</div>
+    <div class="smallbtn" id="btn-calib">Calibrate</div>
+    <div class="smallbtn" id="btn-settings">Settings</div>
+  </div>
+  <div class="credit">Bundled songs are public-domain works, arranged for Cadence.</div>
+</div>
+
+<!-- SONG SELECT -->
+<div class="screen" id="scr-songs">
+  <div class="topbar"><button class="back" data-nav="scr-title">‹ Back</button><h1>Song Library</h1></div>
+  <div style="padding:0 16px">
+    <div class="segrow" id="seg-lib" style="margin-top:0">
+      <div class="seg sel" data-v="all">All</div>
+      <div class="seg" data-v="bundled">Songs</div>
+      <div class="seg" data-v="midi">MIDI</div>
+      <div class="seg" data-v="audio">Audio</div>
+      <div class="seg" data-v="forge">Forge</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <button class="back" id="lib-select">Select</button>
+      <span class="note-dim" id="lib-selinfo" style="flex:1;font-size:12.5px"></span>
+      <button class="back" id="lib-remove" style="display:none">Remove</button>
+    </div>
+  </div>
+  <div class="scroll" id="songlist" style="padding-top:10px"></div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 16px 18px;flex-shrink:0">
+    <button class="back" id="pg-prev">‹ Prev</button>
+    <span id="pg-info" class="note-dim" style="min-width:110px;text-align:center"></span>
+    <button class="back" id="pg-next">Next ›</button>
+  </div>
+</div>
+
+<!-- DIFFICULTY SHEET -->
+<div id="diffsheet">
+  <div class="sheet">
+    <h3 id="ds-title">Song</h3>
+    <div class="sub" id="ds-sub"></div>
+    <div id="lenrow" style="margin:2px 0 14px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:4px">
+        <span>Length</span><span id="lenlabel" style="color:var(--gold);font-weight:600">Full</span></div>
+      <input type="range" id="lenslider" style="width:100%;accent-color:var(--gold)">
+    </div>
+    <div id="pairrow" style="display:flex;align-items:center;gap:8px;margin:0 0 12px">
+      <div class="note-dim" id="pair-status" style="flex:1">Audio: synth</div>
+      <button class="back" id="pair-btn" style="padding:7px 12px;font-size:12.5px">Pair audio</button>
+      <button class="back" id="pair-del" style="padding:7px 12px;font-size:12.5px;display:none">Remove</button>
+      <input type="file" id="pair-file" accept=".mp3,.m4a,.wav,.aac,.ogg,.flac">
+    </div>
+    <button class="diffbtn" data-diff="easy">Easy <small id="ds-e"></small></button>
+    <button class="diffbtn" data-diff="normal">Normal <small id="ds-n"></small></button>
+    <button class="diffbtn" data-diff="hard">Hard <small id="ds-h"></small></button>
+    <button class="btn ghost" id="ds-cancel" style="margin-top:4px">Cancel</button>
+  </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div class="screen" id="scr-play">
+  <div id="playtop">
+    <button id="pausebtn">❚❚</button>
+    <div id="hud-song"></div>
+    <div id="hud-combo">0</div>
+    <div id="hud-score">0</div>
+  </div>
+  <div id="progressbar"><div id="progressfill"></div></div>
+  <div id="fortwrap"><div id="fortbar"></div></div>
+  <div id="stage">
+    <canvas id="gamecanvas"></canvas>
+    <div id="judgepop"></div>
+    <div id="countdown"></div>
+    <div id="pauseoverlay">
+      <h2>Paused</h2>
+      <button class="btn ghost" id="sync-open" style="display:none;width:min(260px,70vw);font-size:14px">Sync tools</button>
+      <div id="syncrow" style="display:none;align-items:center;gap:10px">
+        <button class="back" id="sync-minus" style="padding:8px 12px">−50ms</button>
+        <span class="note-dim" id="sync-val" style="min-width:70px;text-align:center">0 ms</span>
+        <button class="back" id="sync-plus" style="padding:8px 12px">+50ms</button>
+      </div>
+      <div class="note-dim" id="synchint" style="display:none;font-size:11.5px">Music sounds early? −. Sounds late? +. Applies on resume.</div>
+      <button class="btn ghost" id="clicksbtn" style="display:none;width:min(260px,70vw)">Note clicks: Off</button>
+      <div class="note-dim" id="clickshint" style="display:none;font-size:11.5px">Don't tap — just listen. Each tick should merge with the music's hit into one sound. Hear a quick double? Nudge until it becomes one.</div>
+      <button class="btn" id="resumebtn" style="width:min(260px,70vw)">Resume</button>
+      <button class="btn ghost" id="quitbtn" style="width:min(260px,70vw)">Quit song</button>
+    </div>
+  </div>
+  <div id="pads"></div>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="scr-results">
+  <div id="res-grade">A</div>
+  <div id="res-song"></div>
+  <div class="resgrid">
+    <div class="rescell"><div class="k">SCORE</div><div class="v" id="rv-score">0</div></div>
+    <div class="rescell"><div class="k">ACCURACY</div><div class="v" id="rv-acc">0%</div></div>
+    <div class="rescell"><div class="k">PERFECT</div><div class="v" id="rv-perf">0</div></div>
+    <div class="rescell"><div class="k">GOOD</div><div class="v" id="rv-good">0</div></div>
+    <div class="rescell"><div class="k">MISS</div><div class="v" id="rv-miss">0</div></div>
+    <div class="rescell"><div class="k">MAX COMBO</div><div class="v" id="rv-combo">0</div></div>
+  </div>
+  <div id="res-extra" class="note-dim" style="margin-bottom:8px"></div>
+  <div id="res-newbest"></div>
+  <div class="rescol">
+    <button class="btn" id="btn-retry">Play again</button>
+    <button class="btn ghost" id="btn-tosongs">Song library</button>
+  </div>
+</div>
+
+<!-- WEEKLY EVENT -->
+<div class="screen" id="scr-event">
+  <div class="topbar"><button class="back" data-nav="scr-title">‹ Back</button><h1>Weekly Event</h1></div>
+  <div class="scroll">
+    <div class="card">
+      <h3 id="ev-song">—</h3>
+      <div class="note-dim" id="ev-meta">—</div>
+      <button class="btn" id="ev-play" style="margin-top:12px">Play the event</button>
+      <div class="note-dim" id="ev-mybest" style="margin-top:10px"></div>
+    </div>
+    <div class="card" id="ev-namecard">
+      <h3>Board name</h3>
+      <div class="note-dim">Shown publicly on the shared board and inside your share code. Letters, numbers, _ only.</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="ev-name" maxlength="14" placeholder="Your name"
+          style="flex:1;background:var(--ink2);border:1px solid #2e3670;border-radius:10px;padding:11px;color:var(--text);font-size:15px">
+        <button class="btn" id="ev-savename" style="width:auto;padding:11px 16px">Save</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Leaderboard <button class="back" id="ev-refresh" style="float:right;padding:5px 10px;font-size:12px">Refresh</button></h3>
+      <div id="ev-board" class="note-dim" style="margin-top:8px">—</div>
+      <button class="btn ghost" id="ev-post" style="margin-top:10px;display:none">Post my best to the board</button>
+      <button class="btn ghost" id="ev-diag" style="margin-top:8px;font-size:13px;padding:10px">Diagnose storage</button>
+      <div id="ev-diagout" class="note-dim" style="margin-top:8px;font-size:12px;white-space:pre-line"></div>
+      <div class="note-dim" id="ev-disclose" style="margin-top:12px;font-size:11.5px;color:#565d85">
+        The board is shared publicly among everyone playing Cadence through Claude — your board
+        name and score are visible to all. Downloaded copies can't reach the shared board;
+        they compete with share codes below.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Share codes</h3>
+      <div class="note-dim">Send your code to friends; paste theirs to add them to your board view. Codes are checksummed but not tamper-proof — keep it friendly.</div>
+      <div id="ev-mycode" style="margin-top:10px;font-size:13px;word-break:break-all;color:var(--gold);user-select:text;-webkit-user-select:text"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="ev-friendcode" placeholder="Paste a friend's code"
+          style="flex:1;background:var(--ink2);border:1px solid #2e3670;border-radius:10px;padding:11px;color:var(--text);font-size:13px">
+        <button class="btn ghost" id="ev-addfriend" style="width:auto;padding:11px 14px">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CALIBRATION -->
+<div class="screen" id="scr-calib">
+  <div class="topbar" style="position:absolute;top:0;left:0;right:0">
+    <button class="back" data-nav="scr-title">‹ Back</button><h1>Calibration</h1></div>
+  <div id="calib-big">Tap on every tick</div>
+  <div id="calib-count">Your device's audio delay gets measured and applied to scoring.</div>
+  <div id="calib-circle">👆</div>
+  <button class="btn" id="calib-start" style="width:min(280px,76vw)">Start</button>
+  <div class="note-dim" id="calib-result" style="margin-top:16px;min-height:36px"></div>
+</div>
+
+<!-- IMPORT -->
+<div class="screen" id="scr-import">
+  <div class="topbar"><button class="back" data-nav="scr-title">‹ Back</button><h1>Import Songs</h1></div>
+  <div class="scroll">
+    <div class="card">
+      <h3>MIDI file (.mid)</h3>
+      <div class="note-dim">Pick as many files as you like at once. Any standard MIDI file becomes a playable chart — instruments and pitch decide the lanes automatically. Then open the song and tap Pair audio to play the real recording (vocals and all) over the chart. Only import music you have the right to use.</div>
+      <label class="filebtn">Choose MIDI files<input type="file" id="file-midi" accept=".mid,.midi" multiple></label>
+    </div>
+    <div class="card">
+      <h3>Audio file (MP3 / M4A / WAV)</h3>
+      <div class="note-dim">No MIDI needed — Cadence listens to the recording, detects the note attacks, and builds the chart itself. Vocals play as-is. Detection is automatic, so busy mixes chart less precisely than a paired MIDI. Analysis takes a few seconds.</div>
+      <label class="filebtn">Choose audio files<input type="file" id="file-audio" accept=".mp3,.m4a,.wav,.aac,.ogg,.flac" multiple></label>
+    </div>
+    <div class="card">
+      <h3>Forge Sequencer project (.json)</h3>
+      <div class="note-dim">Songs you compose in Forge Sequencer play here as first-party charts. The reader is tolerant of format details — if a file won't load, it will say so plainly rather than guess.</div>
+      <label class="filebtn">Choose Forge projects<input type="file" id="file-forge" accept=".json" multiple></label>
+    </div>
+    <div class="card">
+      <h3>Why no direct online library?</h3>
+      <div class="note-dim">Browsers block this page from downloading files from other sites (CORS). Download a MIDI with your browser, then import it here — two taps, works with any library.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="scr-settings">
+  <div class="topbar"><button class="back" data-nav="scr-title">‹ Back</button><h1>Settings</h1></div>
+  <div class="scroll">
+    <div class="card">
+      <h3>Note speed</h3>
+      <div class="note-dim">How long a note takes to fall. Slower = more read time.</div>
+      <div class="segrow" id="seg-speed">
+        <div class="seg" data-v="2.4">Relaxed</div>
+        <div class="seg sel" data-v="1.8">Standard</div>
+        <div class="seg" data-v="1.2">Swift</div>
+      </div>
+    </div>
+    <div class="card" id="card-lanes">
+      <h3>Lanes</h3>
+      <div class="note-dim">More lanes spread the melody wider — for tablet and desktop screens. Weekly events always play 4 lanes so everyone competes on the same chart. Desktop keys: DFJK · SDFJKL · ASDFJKL;</div>
+      <div class="segrow" id="seg-lanes">
+        <div class="seg sel" data-v="4">4</div>
+        <div class="seg" data-v="6">6</div>
+        <div class="seg" data-v="8">8</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Fortissimo</h3>
+      <div class="note-dim">Perfect notes charge the gold meter under the progress bar — Goods add a trickle. When it fires, every note scores ×2 for a stretch, stacking with Crescendo zones for ×4. Auto fires the moment it's full; Manual saves it for you to unleash — tap the glowing meter (or press F) at your moment. Weekly events always play Auto for fairness.</div>
+      <div class="segrow" id="seg-fort">
+        <div class="seg sel" data-v="auto">Auto</div>
+        <div class="seg" data-v="manual">Manual</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Tap sound</h3>
+      <div class="segrow" id="seg-tapsfx">
+        <div class="seg sel" data-v="on">On</div>
+        <div class="seg" data-v="off">Off</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Audio offset</h3>
+      <div class="note-dim" id="set-offset">Not calibrated yet.</div>
+      <button class="btn ghost" style="margin-top:10px" data-nav="scr-calib">Recalibrate</button>
+    </div>
+    <div class="card">
+      <h3>Imported songs</h3>
+      <div class="note-dim" id="set-imports">None yet.</div>
+      <button class="btn ghost" style="margin-top:10px" id="btn-clearimports">Remove all imported songs</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+</div>
+<script>
+"use strict";
+/* CORE-START */
+/* =====================================================================
+   CADENCE CORE — pure logic, no DOM/audio. Tested by cadence.tests.mjs
+   ===================================================================== */
+
+const CORE = (() => {
+
+/* ---------- constants ---------- */
+const LANES = 4;
+const WIN_PERFECT = 0.065;   // seconds
+const WIN_GOOD    = 0.130;   // seconds
+const DIFFS = {
+  easy:   { gapAll: 0.35, gapLane: 0.42, maxChord: 1, melodyOnlyBias: true,  holdSrc: 1.0,  holdReach: true  },
+  normal: { gapAll: 0.17, gapLane: 0.24, maxChord: 2, melodyOnlyBias: false, holdSrc: 0.55, holdReach: true  },
+  hard:   { gapAll: 0.085,gapLane: 0.13, maxChord: 3, melodyOnlyBias: false, holdSrc: 0.55, holdReach: false }
+};
+
+/* =====================================================================
+   MIDI PARSER — Standard MIDI Files format 0 and 1, running status,
+   tempo map, note on/off pairing. Output: internal Song object.
+   ===================================================================== */
+function parseMIDI(buf, title) {
+  const d = new DataView(buf);
+  let p = 0;
+  const u32 = () => { const v = d.getUint32(p); p += 4; return v; };
+  const u16 = () => { const v = d.getUint16(p); p += 2; return v; };
+  const u8  = () => d.getUint8(p++);
+  const str4 = () => { let s=""; for (let i=0;i<4;i++) s += String.fromCharCode(u8()); return s; };
+
+  if (str4() !== "MThd") throw new Error("Not a MIDI file (missing MThd).");
+  const hlen = u32(); const format = u16(); const ntrks = u16(); const division = u16();
+  p += hlen - 6;
+  if (division & 0x8000) throw new Error("SMPTE-timed MIDI files aren't supported (rare format).");
+  if (format > 1) throw new Error("MIDI format 2 isn't supported.");
+  const tpq = division; // ticks per quarter note
+
+  // Pass 1: read all tracks into raw event lists (tick-stamped)
+  const rawTracks = [];
+  for (let t = 0; t < ntrks; t++) {
+    if (p + 8 > d.byteLength) break;
+    if (str4() !== "MTrk") throw new Error("Corrupt MIDI (missing MTrk).");
+    const len = u32(); const end = p + len;
+    let tick = 0, run = 0;
+    const evs = []; let name = "";
+    while (p < end) {
+      // variable-length delta
+      let delta = 0, b;
+      do { b = u8(); delta = (delta << 7) | (b & 0x7f); } while (b & 0x80);
+      tick += delta;
+      let status = d.getUint8(p);
+      if (status & 0x80) { p++; run = status; } else { status = run; }
+      const type = status & 0xf0, ch = status & 0x0f;
+      if (status === 0xff) { // meta
+        const meta = u8();
+        let mlen = 0; do { b = u8(); mlen = (mlen << 7) | (b & 0x7f); } while (b & 0x80);
+        if (meta === 0x51 && mlen === 3) {
+          const uspq = (u8() << 16) | (u8() << 8) | u8();
+          evs.push({ tick, kind: "tempo", uspq });
+        } else if (meta === 0x03) {
+          let s=""; for (let i=0;i<mlen;i++) s += String.fromCharCode(u8());
+          if (!name) name = s.trim();
+        } else if (meta === 0x2f) { p += mlen; break; }
+        else p += mlen;
+      } else if (status === 0xf0 || status === 0xf7) { // sysex
+        let mlen = 0; do { b = u8(); mlen = (mlen << 7) | (b & 0x7f); } while (b & 0x80);
+        p += mlen;
+      } else if (type === 0x90) {
+        const pitch = u8(), vel = u8();
+        evs.push({ tick, kind: vel > 0 ? "on" : "off", ch, pitch, vel });
+      } else if (type === 0x80) {
+        const pitch = u8(); u8();
+        evs.push({ tick, kind: "off", ch, pitch });
+      } else if (type === 0xc0) {
+        const prog = u8();
+        evs.push({ tick, kind: "prog", ch, prog });
+      } else if (type === 0xa0 || type === 0xb0 || type === 0xe0) { p += 2; }
+      else if (type === 0xd0) { p += 1; }
+      else throw new Error("Unrecognized MIDI event 0x" + status.toString(16));
+    }
+    p = end;
+    rawTracks.push({ name, evs });
+  }
+
+  // Tempo map (ticks -> seconds), default 120bpm
+  const tempos = [{ tick: 0, uspq: 500000 }];
+  for (const tr of rawTracks) for (const e of tr.evs)
+    if (e.kind === "tempo") tempos.push({ tick: e.tick, uspq: e.uspq });
+  tempos.sort((a, b) => a.tick - b.tick);
+  // precompute cumulative seconds at each tempo change
+  let acc = 0;
+  for (let i = 0; i < tempos.length; i++) {
+    if (i > 0) acc += (tempos[i].tick - tempos[i-1].tick) * tempos[i-1].uspq / 1e6 / tpq;
+    tempos[i].sec = acc;
+  }
+  const tickToSec = (tick) => {
+    let lo = 0, hi = tempos.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (tempos[mid].tick <= tick) lo = mid; else hi = mid - 1; }
+    const t0 = tempos[lo];
+    return t0.sec + (tick - t0.tick) * t0.uspq / 1e6 / tpq;
+  };
+
+  // Pass 2: pair note on/off per track+channel+pitch
+  const tracks = [];
+  for (const tr of rawTracks) {
+    const open = new Map(); // key ch:pitch -> {tick, vel}
+    const notes = []; const progs = new Map(); const chans = new Set();
+    for (const e of tr.evs) {
+      if (e.kind === "prog") progs.set(e.ch, e.prog);
+      else if (e.kind === "on") {
+        chans.add(e.ch);
+        const k = e.ch + ":" + e.pitch;
+        if (open.has(k)) { const o = open.get(k);
+          notes.push({ t: tickToSec(o.tick), d: Math.max(0.05, tickToSec(e.tick) - tickToSec(o.tick)), p: e.pitch, v: o.vel, ch: e.ch }); }
+        open.set(k, { tick: e.tick, vel: e.vel });
+      } else if (e.kind === "off") {
+        const k = e.ch + ":" + e.pitch;
+        if (open.has(k)) { const o = open.get(k);
+          notes.push({ t: tickToSec(o.tick), d: Math.max(0.05, tickToSec(e.tick) - tickToSec(o.tick)), p: e.pitch, v: o.vel, ch: e.ch });
+          open.delete(k); }
+      }
+    }
+    if (!notes.length) continue;
+    notes.sort((a, b) => a.t - b.t || a.p - b.p);
+    const isDrum = [...chans].every(c => c === 9) && chans.size > 0;
+    const prog = progs.size ? [...progs.values()][0] : 0;
+    tracks.push({ name: tr.name, notes, isDrum, prog });
+  }
+  if (!tracks.length) throw new Error("No notes found in this MIDI file.");
+
+  let dur = 0;
+  for (const tr of tracks) for (const n of tr.notes) dur = Math.max(dur, n.t + n.d);
+  const firstTempo = tempos[0].uspq;
+  return {
+    id: "midi-" + hashStr(title + ":" + dur.toFixed(2) + ":" + tracks.length),
+    title: title || rawTracks.find(t => t.name)?.name || "Imported MIDI",
+    composer: "MIDI import",
+    source: "midi",
+    bpm: Math.round(6e7 / firstTempo),
+    tracks, duration: dur
+  };
+}
+
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+
+/* =====================================================================
+   FORGE SEQUENCER IMPORT — tolerant reader. Looks for tracks of notes
+   under common key names; refuses plainly rather than guessing wrong.
+   ===================================================================== */
+function parseForgeJSON(obj, filename) {
+  function num(v) { return typeof v === "number" && isFinite(v) ? v : null; }
+  function str(v) { return typeof v === "string" ? v : ""; }
+
+  // ---- Native Forge Sequencer schema (locked from a real export, Jul 2026):
+  // { name, bpm, bars, res: steps-per-beat, tracks:[{ type:'inst'|'drum', name,
+  //   inst, notes:[{midi, step, len, vel(0-1)}], mute, solo, vol }] }
+  const nativeTracks = Array.isArray(obj && obj.tracks) ? obj.tracks : null;
+  // A drum note carries drum:"kick" instead of midi, so a drums-only export
+  // must be recognised by either field or it falls through to the tolerant
+  // reader and throws for having no pitched notes.
+  const isNative = nativeTracks && nativeTracks.some(t => Array.isArray(t.notes) &&
+    t.notes.length && t.notes[0].step != null &&
+    (t.notes[0].midi != null || typeof t.notes[0].drum === "string"));
+
+  if (isNative) {
+    const bpm = num(obj.bpm) || 120;
+    const res = num(obj.res) || 2;              // steps per beat
+    const secPerStep = 60 / bpm / res;
+    const soloed = nativeTracks.filter(t => t.solo);
+    const pool = (soloed.length ? soloed : nativeTracks).filter(t => !t.mute);
+    const maxVol = Math.max(0.0001, ...pool.map(t => num(t.vol) ?? 1));
+    const VOICE = [
+      [/drum|kit|perc/i, "drums"], [/marimba|xylo|vibe|glock|celest|bell|chime|music.?box/i, "bell"],
+      [/organ|pad|choir|string|accord/i, "organ"], [/square|chip|8.?bit|nes/i, "square"],
+      [/saw|lead|brass|trump|horn|synth(?!.?bass)/i, "saw"],
+      [/bass|sub/i, "bass"], [/guitar|pluck|harp|koto|banjo|ukulele|harpsi|shamisen|pizz/i, "pluck"],
+      [/piano|keys|rhodes|epiano|e-?piano|clav/i, "piano"], [/flute|whistle|ocarina|sine/i, "square"]
+    ];
+    // Forge Sequencer's 22 instrument ids, resolved to the 8 engine voices.
+    // Consulted BEFORE the regex table so an exact id can never be captured by
+    // a substring rule -- "steeldrum" was hitting /drum/ and importing a
+    // pitched track as percussion. Also stops a user-renamed track ("E-Piano"
+    // on a guitar) from overriding its real instrument.
+    const FORGE_VOICE = {
+      piano: "piano", epiano: "piano", organ: "organ", guitar: "pluck", harp: "pluck",
+      marimba: "bell", bell: "bell", brass: "saw", strings: "saw", sawlead: "saw",
+      square: "square", fm: "organ", choir: "organ", ooh: "organ", musicbox: "bell",
+      celesta: "bell", steeldrum: "bell", pizz: "pluck", accordion: "organ",
+      synthbass: "bass", banjo: "pluck", sitar: "pluck"
+    };
+    const voiceFor = (tr) => {
+      if (tr.type === "drum") return "drums";   // Forge declares percussion, never a name
+      const id = str(tr.inst).trim().toLowerCase();
+      if (typeof FORGE_VOICE[id] === "string") return FORGE_VOICE[id];
+      const s = (str(tr.inst) + " " + str(tr.name)).toLowerCase();
+      for (const [re, v] of VOICE) if (re.test(s)) return v;
+      return "piano";
+    };
+    const DRUM_MIDI = { kick: 36, snare: 38, clap: 39, tom: 45, hat: 42, hat_o: 46,
+                        hihat: 42, openhat: 46, crash: 49, ride: 51, rim: 37, shaker: 70 };
+    const tracks = [];
+    for (const tr of pool) {
+      if (!Array.isArray(tr.notes) || !tr.notes.length) continue;
+      // sqrt curve: keeps his mixer balance without crushing quiet tracks
+      const rel = Math.sqrt((num(tr.vol) ?? 1) / maxVol);
+      const inst = voiceFor(tr);
+      const notes = [];
+      for (const n of tr.notes) {
+        const step = num(n.step);
+        let midi = num(n.midi);
+        if (midi == null && typeof n.drum === "string")
+          midi = DRUM_MIDI[n.drum.toLowerCase()] ?? 42;
+        if (midi == null || step == null) continue;
+        const lenSteps = Math.max(0.25, num(n.len) ?? 1);
+        const vel = Math.max(1, Math.min(127, Math.round((num(n.vel) ?? 0.8) * 127 * rel)));
+        notes.push({ t: step * secPerStep, d: Math.max(0.05, lenSteps * secPerStep),
+                     p: Math.round(midi), v: vel });
+      }
+      if (!notes.length) continue;
+      notes.sort((x, y) => x.t - y.t || x.p - y.p);
+      tracks.push({ name: str(tr.name) || "Track", notes, isDrum: inst === "drums", prog: 0, inst });
+    }
+    if (!tracks.length) throw new Error("All tracks are muted or empty in this Forge song.");
+    let dur = 0;
+    for (const tr of tracks) for (const n of tr.notes) dur = Math.max(dur, n.t + n.d);
+    return { id: "forge-" + hashStr((str(obj.id) || str(obj.name) || filename || "forge") + ":" + dur.toFixed(2)),
+             title: str(obj.name) || (filename || "Forge song").replace(/\.json$/i, ""),
+             composer: "Forge Sequencer", source: "forge", bpm, tracks, duration: dur };
+  }
+
+  // ---- Fallback: tolerant reader for other JSON shapes ----
+  const trackArr = obj.tracks || obj.parts || obj.channels || (Array.isArray(obj) ? obj : null);
+  if (!Array.isArray(trackArr)) throw new Error("Couldn't find a tracks array in this JSON.");
+  const bpm = num(obj.bpm) || num(obj.tempo) || 120;
+  const spb = 60 / bpm;
+  const tracks = [];
+  for (const tr of trackArr) {
+    const rawNotes = tr.notes || tr.cells || tr.events;
+    if (!Array.isArray(rawNotes) || !rawNotes.length) continue;
+    const notes = [];
+    for (const n of rawNotes) {
+      const pitch = num(n.pitch ?? n.p ?? n.midi ?? n.note);
+      const start = num(n.start ?? n.t ?? n.time ?? n.beat);
+      let durB  = num(n.duration ?? n.d ?? n.length);
+      if (pitch == null || start == null) continue;
+      if (durB == null || durB <= 0) durB = 0.5;
+      notes.push({ t: start * spb, d: Math.max(0.05, durB * spb), p: Math.round(pitch), v: 96 });
+    }
+    if (notes.length) {
+      notes.sort((a, b) => a.t - b.t || a.p - b.p);
+      tracks.push({ name: str(tr.name) || str(tr.instrument) || "Track",
+                    notes, isDrum: /drum|kit|perc/i.test(str(tr.instrument) || str(tr.name) || ""),
+                    prog: 0, inst: str(tr.instrument) || null });
+    }
+  }
+  if (!tracks.length) throw new Error("Found the tracks array but no readable notes (expected pitch + start per note).");
+  let dur = 0;
+  for (const tr of tracks) for (const n of tr.notes) dur = Math.max(dur, n.t + n.d);
+  return {
+    id: "forge-" + hashStr((obj.title || filename || "forge") + ":" + dur.toFixed(2)),
+    title: str(obj.title) || str(obj.name) || (filename || "Forge song").replace(/\.json$/i, ""),
+    composer: "Forge Sequencer", source: "forge", bpm, tracks, duration: dur
+  };
+}
+
+/* =====================================================================
+   LANE MAPPING (hybrid) + DENSITY THINNING -> CHART
+   ===================================================================== */
+function classifyTracks(song) {
+  const pitched = song.tracks.filter(t => !t.isDrum);
+  const drums = song.tracks.filter(t => t.isDrum);
+  let melody = null, bass = null;
+  if (pitched.length) {
+    const stats = pitched.map(t => {
+      const avg = t.notes.reduce((s, n) => s + n.p, 0) / t.notes.length;
+      const span = (t.notes[t.notes.length - 1].t - t.notes[0].t) / Math.max(1e-9, song.duration);
+      return { t, avg, count: t.notes.length, span };
+    });
+    // bass: lowest average pitch, if clearly low or bass program
+    stats.sort((a, b) => a.avg - b.avg);
+    const lowest = stats[0];
+    const isBassProg = lowest.t.prog >= 32 && lowest.t.prog <= 39;
+    if (stats.length > 1 && (lowest.avg < 52 || isBassProg)) bass = lowest.t;
+    // melody: pitch matters, but density and whole-song coverage matter more —
+    // a sparse line that enters at the bridge must not beat the through-line
+    const mScore = (s) => s.avg + 4 * Math.log2(s.count + 1) + 20 * Math.min(1, s.span);
+    const rest = stats.filter(s => s.t !== bass);
+    rest.sort((a, b) => mScore(b) - mScore(a));
+    melody = rest.length ? rest[0].t : null;
+  }
+  const others = song.tracks.filter(t => t !== melody && t !== bass && !t.isDrum);
+  return { melody, bass, drums, others };
+}
+
+function buildChart(song, diffName, laneCount) {
+  const L = Math.max(2, Math.min(8, laneCount || 4));
+  const cfg = DIFFS[diffName];
+  const { melody, bass, drums, others } = classifyTracks(song);
+  const cands = []; // {t, lane, prio, p}
+
+  const pushTrack = (track, laneFn, prio) => {
+    for (const n of track.notes) cands.push({ t: n.t, lane: laneFn(n), prio, p: n.p, d: n.d, v: n.v });
+  };
+
+  // Melody band cut points. bands=3 and bands=4 keep the legacy 0.34/0.5/0.67
+  // cuts EXACTLY so 4-lane charts (events, existing bests) never shift.
+  const bandCuts = (bands) =>
+    bands === 3 ? [0.34, 0.67]
+    : bands === 4 ? [0.34, 0.5, 0.67]
+    : Array.from({ length: bands - 1 }, (_, i) => (i + 1) / bands);
+
+  let roleMode = false;
+  if (melody && (bass || drums.length || others.length)) {
+    roleMode = true;
+    // role mode: bass/rhythm own lane 0, melody spreads over the remaining lanes
+    const ps = melody.notes.map(n => n.p).sort((a, b) => a - b);
+    const q = (f) => ps[Math.min(ps.length - 1, Math.floor(ps.length * f))];
+    const lo = q(0.34), hi = q(0.67);
+    const mStart = (bass || drums.length) ? 1 : 0;
+    const bands = L - mStart;
+    const cuts = bandCuts(bands).map(q);
+    const laneOf = (n) => {
+      let b = 0; while (b < cuts.length && n.p >= cuts[b]) b++;
+      return mStart + b;
+    };
+    pushTrack(melody, laneOf, 3);
+    if (bass) pushTrack(bass, () => 0, 1);
+    for (const dtr of drums) pushTrack(dtr, () => 0, 1);
+    for (const o of others) pushTrack(o, (n) => (n.p < lo ? 0 : 1), 0);
+  } else {
+    // single-source mode: explicit lanes win; the rest get pitch bands
+    // (quartiles computed over the un-fixed notes so pseudo-pitches don't skew)
+    const all = song.tracks.flatMap(t => t.notes);
+    const free = all.filter(n => n.lane == null);
+    const ps = (free.length ? free : all).map(n => n.p).sort((a, b) => a - b);
+    const q = (f) => ps[Math.min(ps.length - 1, Math.floor(ps.length * f))];
+    const cuts = Array.from({ length: L - 1 }, (_, i) => q((i + 1) / L));
+    const scaleLane = (l) => L === 4 ? l : Math.min(L - 1, Math.round(l * (L - 1) / 3));
+    for (const tr of song.tracks)
+      pushTrack(tr, (n) => {
+        if (n.lane != null) return scaleLane(n.lane);
+        let b = 0; while (b < cuts.length && n.p >= cuts[b]) b++; return b;
+      }, 2);
+  }
+
+  // sort by time; within a chord cluster, higher priority (then higher pitch) first
+  cands.sort((a, b) => a.t - b.t || b.prio - a.prio || b.p - a.p);
+
+  // Easy bias: prefer melody notes only, unless the song has no roles
+  // Audio-derived songs: difficulty follows onset STRENGTH — Easy is the
+  // strongest hits (the drums you can hear), Hard is everything.
+  let base = cands;
+  if (song.source === "audio" && diffName !== "hard" && cands.length > 8) {
+    // semantic tiers: Easy = the booms (v>=105), Normal = booms + percussion
+    // (v>=88), Hard = everything. Falls back to all when a recording has no
+    // percussion to speak of (solo piano, ambient).
+    const vMin = diffName === "easy" ? 105 : 88;
+    base = cands.filter(c => (c.v || 96) >= vMin);
+    if (base.length < 24) base = cands;
+  }
+  // Easy keeps melody + bass anchors (role-mode songs only — single-track
+  // songs must NOT take this path or the pool empties out)
+  const pool = (cfg.melodyOnlyBias && roleMode)
+    ? base.filter(c => c.prio >= 3 || c.prio === 1)
+    : base;
+
+  // greedy thinning with global + per-lane gaps and chord cap
+  const thinPass = (arr) => {
+    const out = [];
+    let lastGlobal = -Infinity;
+    const lastLane = new Array(8).fill(-Infinity);
+    let chordT = -Infinity, chordN = 0;
+    const EPS = 0.012;
+    for (const c of arr) {
+      const sameChord = Math.abs(c.t - chordT) < EPS;
+      if (sameChord) {
+        if (chordN >= cfg.maxChord) continue;
+        if (c.t - lastLane[c.lane] < cfg.gapLane) continue;
+        out.push({ t: c.t, lane: c.lane, d: c.d }); lastLane[c.lane] = c.t; chordN++;
+        continue;
+      }
+      if (c.t - lastGlobal < cfg.gapAll) continue;
+      if (c.t - lastLane[c.lane] < cfg.gapLane) continue;
+      out.push({ t: c.t, lane: c.lane, d: c.d });
+      lastGlobal = c.t; lastLane[c.lane] = c.t; chordT = c.t; chordN = 1;
+    }
+    return out;
+  };
+  const spliceFit = (kept2, c) => {
+    let lo = 0, hi = kept2.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (kept2[mid].t < c.t) lo = mid + 1; else hi = mid; }
+    if (lo > 0 && c.t - kept2[lo - 1].t < cfg.gapAll) return;
+    if (lo < kept2.length && kept2[lo].t - c.t < cfg.gapAll) return;
+    for (let i = Math.max(0, lo - 6); i < Math.min(kept2.length, lo + 6); i++)
+      if (kept2[i].lane === c.lane && Math.abs(kept2[i].t - c.t) < cfg.gapLane) return;
+    kept2.splice(lo, 0, { t: c.t, lane: c.lane, d: c.d });
+  };
+  let kept;
+  if (song.source === "audio") {
+    // strongest booms claim slots first, then weaker booms, then everything
+    // else — strength order throughout, so no weak hit ever displaces a drum
+    const byStrength = pool.slice().sort((a, b) => (b.v || 96) - (a.v || 96) || a.t - b.t);
+    kept = [];
+    for (const c of byStrength) if ((c.v || 96) >= 105) spliceFit(kept, c);
+    for (const c of byStrength) if ((c.v || 96) < 105) spliceFit(kept, c);
+  } else {
+    kept = thinPass(pool);
+  }
+  kept.sort((a, b) => a.t - b.t || a.lane - b.lane);
+
+  // Easy gap-fill: melody+bass alone can leave long dead stretches (intros,
+  // instrumental breaks) while the music plays. Wherever a gap > FILL_GAP
+  // remains, admit notes from the full pool at Easy's own spacing rules.
+  if (cfg.melodyOnlyBias && roleMode) {
+    const FILL_GAP = 3.0;
+    for (const c of cands) {
+      let lo = 0, hi = kept.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (kept[mid].t < c.t) lo = mid + 1; else hi = mid; }
+      const prev = lo > 0 ? kept[lo - 1] : null;
+      const next = lo < kept.length ? kept[lo] : null;
+      const stretch = (prev ? next ? next.t - prev.t : Infinity : (next ? next.t : Infinity));
+      if (stretch <= FILL_GAP) continue;                    // not a dead stretch
+      if (prev && c.t - prev.t < cfg.gapAll) continue;      // keep Easy spacing
+      if (next && next.t - c.t < cfg.gapAll) continue;
+      let laneOk = true;
+      for (let i = Math.max(0, lo - 6); i < Math.min(kept.length, lo + 6); i++) {
+        if (kept[i].lane === c.lane && Math.abs(kept[i].t - c.t) < cfg.gapLane) { laneOk = false; break; }
+      }
+      if (!laneOk) continue;
+      kept.splice(lo, 0, { t: c.t, lane: c.lane, d: c.d });
+    }
+  }
+
+  // ---- HOLDS (normal/hard): sustained source notes become hold notes,
+  // clamped to end before the next note in the same lane. Easy stays taps.
+  const HOLD_SRC = cfg.holdSrc, HOLD_MIN = 0.35, HOLD_GAP = 0.12, HOLD_MAX = 4;
+  const nextInLane = new Array(kept.length).fill(Infinity);
+  const lastIdx = new Array(8).fill(-1);
+  for (let i = 0; i < kept.length; i++) {
+    const li = lastIdx[kept[i].lane];
+    if (li >= 0) nextInLane[li] = kept[i].t;
+    lastIdx[kept[i].lane] = i;
+  }
+  // Reachability: a hold in lane 0 while a note falls in lane 3 asks for a
+  // third thumb. Easy/Normal clamp holds so they never span a note more than
+  // one lane away; Hard keeps the conflict as a deliberate sacrifice choice.
+  const nextFar = new Array(kept.length).fill(Infinity);
+  if (cfg.holdReach) {
+    const nextByLane = new Array(8).fill(Infinity);
+    for (let i = kept.length - 1; i >= 0; i--) {
+      let soonest = Infinity;
+      for (let l = 0; l < 8; l++)
+        if (Math.abs(l - kept[i].lane) > 1 && nextByLane[l] < soonest) soonest = nextByLane[l];
+      nextFar[i] = soonest;
+      nextByLane[kept[i].lane] = kept[i].t;
+    }
+  }
+  // Audio charts carry measured sustain, which on a dense recording can ask
+  // for more held pads than a player has fingers -- Fire Cross Hard wanted 4
+  // at once. Two concurrent holds is the ceiling, leaving a hand free to tap.
+  // Scoped to audio so bundled and MIDI charts (and their bests) don't move.
+  const HOLD_CONCURRENT = 2;
+  const capConcurrent = song.source === "audio";
+  const activeEnds = [];
+  return kept.map((k, i) => {
+    let hold = 0;
+    if ((k.d || 0) >= HOLD_SRC) {
+      const h = Math.min(k.d, HOLD_MAX, nextInLane[i] - k.t - HOLD_GAP,
+                         nextFar[i] - k.t - HOLD_GAP);
+      if (h >= HOLD_MIN) {
+        if (capConcurrent) {
+          for (let j = activeEnds.length - 1; j >= 0; j--)
+            if (activeEnds[j] <= k.t) activeEnds.splice(j, 1);
+          if (activeEnds.length < HOLD_CONCURRENT) {
+            hold = Math.round(h * 1000) / 1000;
+            activeEnds.push(k.t + hold);
+          }
+        } else {
+          hold = Math.round(h * 1000) / 1000;
+        }
+      }
+    }
+    return { id: i, t: k.t, lane: k.lane, d: hold };
+  });
+}
+
+/* =====================================================================
+   GRADING ENGINE — pure state machine driven by (lane, time) taps.
+   ===================================================================== */
+function newRun(chart, songMeta, diffName, zones, fort) {
+  const zs = zones || [];
+  return {
+    fortMode: (fort && fort.mode) === "manual" ? "manual" : "auto",
+    fortDur: (fort && fort.dur) || 18,
+    fortReq: fortReqFor(chart.length),
+    fortMeter: 0, fortUntil: -Infinity, fortCount: 0,
+    notes: chart.map(n => ({ ...n, hit: false, grade: null, headPts: 0, holding: false, holdDone: null, holdFrac: 0 })),
+    combo: 0, maxCombo: 0,
+    perfect: 0, good: 0, miss: 0,
+    score: 0,
+    total: chart.length,
+    holdsTotal: chart.filter(n => n.d > 0).length, holdsDone: 0,
+    holdsPartial: 0, holdPartialFrac: 0,
+    zones: zs,
+    zoneStats: zs.map(z => ({
+      total: chart.filter(n => n.t >= z.start && n.t < z.end).length, perfect: 0 })),
+    crescendoPerfect: 0,
+    song: { id: songMeta.id, title: songMeta.title },
+    difficulty: diffName,
+    done: false
+  };
+}
+function zoneIndexAt(run, t) {
+  for (let i = 0; i < run.zones.length; i++)
+    if (t >= run.zones[i].start && t < run.zones[i].end) return i;
+  return -1;
+}
+
+function gradeTap(run, lane, time) {
+  // nearest ungraded note in this lane within the GOOD window
+  let best = null, bestAbs = Infinity;
+  for (const n of run.notes) {
+    if (n.hit || n.grade === "miss" || n.lane !== lane) continue;
+    if (n.t - time > WIN_GOOD) break; // notes sorted by t
+    const abs = Math.abs(n.t - time);
+    if (abs <= WIN_GOOD && abs < bestAbs) { best = n; bestAbs = abs; }
+  }
+  if (!best) return null; // empty tap: no penalty, no note consumed
+  best.hit = true;
+  let pts;
+  if (bestAbs <= WIN_PERFECT) {
+    best.grade = "perfect"; run.perfect++;
+    run.combo++; pts = 100 + Math.min(100, run.combo * 2);
+  } else {
+    best.grade = "good"; run.good++;
+    run.combo++; pts = 50 + Math.min(50, run.combo);
+  }
+  pts = Math.round(pts * comboMultAt(run.combo, run.total));
+  const zi = zoneIndexAt(run, best.t);
+  if (zi >= 0) {
+    pts *= 2; // Crescendo: double points inside the zone
+    if (best.grade === "perfect") run.zoneStats[zi].perfect++;
+  }
+  const fa = fortActiveAt(run, time);
+  if (fa) pts *= FORT_MULT; // Fortissimo stacks with Crescendo (x4)
+  best.headPts = pts;
+  run.score += pts;
+  if (!fa) { // the meter charges only while dormant; the filling tap isn't boosted
+    run.fortMeter += best.grade === "perfect" ? FORT_PERFECT : FORT_GOOD;
+    if (run.fortMode === "auto" && run.fortMeter >= run.fortReq) fortActivate(run, time);
+  }
+  if (best.d > 0) best.holding = true;
+  run.maxCombo = Math.max(run.maxCombo, run.combo);
+  return best.grade;
+}
+
+function tickMisses(run, time) {
+  let missed = 0;
+  for (const n of run.notes) {
+    if (n.hit || n.grade === "miss") continue;
+    if (time - n.t > WIN_GOOD) { n.grade = "miss"; run.miss++; run.combo = 0; missed++; }
+    else break;
+  }
+  return missed;
+}
+
+/* =====================================================================
+   AUDIO ANALYSIS — onset detection for charting straight from a recording.
+   Hand-rolled FFT + spectral flux + adaptive peak picking. Pure, testable.
+   ===================================================================== */
+function fftRadix2(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {           // bit reversal
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len;
+    const wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cwr = 1, cwi = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const ur = re[i + k], ui = im[i + k];
+        const vr = re[i + k + len / 2] * cwr - im[i + k + len / 2] * cwi;
+        const vi = re[i + k + len / 2] * cwi + im[i + k + len / 2] * cwr;
+        re[i + k] = ur + vr; im[i + k] = ui + vi;
+        re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi;
+        const nwr = cwr * wr - cwi * wi; cwi = cwr * wi + cwi * wr; cwr = nwr;
+      }
+    }
+  }
+}
+
+const AN = { WIN: 2048, HOP: 1024, MIN_GAP_FRAMES: 4 };
+
+function detectOnsets(mono, sampleRate) {
+  const { WIN, HOP } = AN;
+  const nFrames = Math.max(0, Math.floor((mono.length - WIN) / HOP));
+  if (nFrames < 4) return [];
+  const half = WIN / 2;
+  const hann = new Float32Array(WIN);
+  for (let i = 0; i < WIN; i++) hann[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (WIN - 1));
+  const re = new Float32Array(WIN), im = new Float32Array(WIN);
+  let prevMag = null;
+  const flux = new Float32Array(nFrames);
+  const domFreq = new Float32Array(nFrames);
+  const loBin = Math.max(1, Math.round(80 * WIN / sampleRate));
+  const hiBin = Math.min(half - 1, Math.round(4000 * WIN / sampleRate));
+  const lowCut = Math.max(2, Math.round(250 * WIN / sampleRate));
+  const kickLo = Math.max(1, Math.round(40 * WIN / sampleRate));
+  const kickHi = Math.max(kickLo + 1, Math.round(140 * WIN / sampleRate));
+  const lowFlux = new Float32Array(nFrames);
+  const kickFlux = new Float32Array(nFrames);
+  for (let f = 0; f < nFrames; f++) {
+    const off = f * HOP;
+    for (let i = 0; i < WIN; i++) { re[i] = mono[off + i] * hann[i]; im[i] = 0; }
+    fftRadix2(re, im);
+    const mag = new Float32Array(half);
+    let best = loBin, bestV = 0;
+    for (let b = 1; b < half; b++) {
+      mag[b] = Math.sqrt(re[b] * re[b] + im[b] * im[b]);
+      if (b >= loBin && b <= hiBin && mag[b] > bestV) { bestV = mag[b]; best = b; }
+    }
+    domFreq[f] = best * sampleRate / WIN;
+    if (prevMag) {
+      let s = 0, sl = 0, sk = 0;
+      for (let b = 1; b < half; b++) {
+        const d = Math.log(1 + mag[b]) - Math.log(1 + prevMag[b]);
+        if (d > 0) { s += d; if (b < lowCut) sl += d; if (b >= kickLo && b <= kickHi) sk += d; }
+      }
+      flux[f] = s; lowFlux[f] = sl; kickFlux[f] = sk;
+    }
+    prevMag = mag;
+  }
+  // adaptive peak picking: local mean + spread over ~±0.35s
+  const W = Math.max(4, Math.round(0.35 * sampleRate / HOP));
+  const onsets = [];
+  let lastFrame = -1e9;
+  let globalMax = 0;
+  for (let f = 0; f < nFrames; f++) if (flux[f] > globalMax) globalMax = flux[f];
+  if (globalMax <= 0) return [];
+  for (let f = 2; f < nFrames - 2; f++) {
+    let sum = 0, cnt = 0;
+    for (let k = Math.max(0, f - W); k <= Math.min(nFrames - 1, f + W); k++) { sum += flux[k]; cnt++; }
+    const mean = sum / cnt;
+    let dev = 0;
+    for (let k = Math.max(0, f - W); k <= Math.min(nFrames - 1, f + W); k++) dev += Math.abs(flux[k] - mean);
+    dev /= cnt;
+    const thr = mean + Math.max(1.3 * dev, 0.02 * globalMax);
+    if (flux[f] <= thr) continue;
+    if (flux[f] < flux[f - 1] || flux[f] < flux[f + 1]) continue;   // local max
+    if (f - lastFrame < AN.MIN_GAP_FRAMES) continue;
+    lastFrame = f;
+    // kick ratio: this frame's kick-band flux vs its own local average
+    let ks = 0, kc = 0;
+    for (let k = Math.max(0, f - W); k <= Math.min(nFrames - 1, f + W); k++) { ks += kickFlux[k]; kc++; }
+    const kickR = kickFlux[f] / (ks / kc + 1e-9);
+    onsets.push({
+      kick: Math.round(kickR * 100) / 100,
+      t: Math.round((f * HOP + WIN / 2) / sampleRate * 1000) / 1000,
+      strength: Math.round(flux[f] / (mean + 1e-9) * 100) / 100,
+      low: Math.round(lowFlux[f] / (flux[f] + 1e-9) * 100) / 100,   // kick/bass share
+      freq: Math.round(domFreq[f])
+    });
+  }
+  return onsets;
+}
+
+/* =====================================================================
+   PERCUSSION DETECTION — harmonic/percussive separation (median filtering,
+   Fitzgerald 2010). Sustained tones survive time-medians; drum transients
+   survive frequency-medians. Energy peaks of the percussive layer find
+   repeated kicks that spectral flux misses under sustained walls of sound.
+   ===================================================================== */
+const _m9 = new Float64Array(9);
+function med9(a, b, c, d, e, f, g, h, i) {
+  _m9[0] = a; _m9[1] = b; _m9[2] = c; _m9[3] = d; _m9[4] = e;
+  _m9[5] = f; _m9[6] = g; _m9[7] = h; _m9[8] = i;
+  for (let x = 1; x < 9; x++) {           // insertion sort, no allocation
+    const v = _m9[x];
+    let y = x - 1;
+    while (y >= 0 && _m9[y] > v) { _m9[y + 1] = _m9[y]; y--; }
+    _m9[y + 1] = v;
+  }
+  return _m9[4];
+}
+function detectPercussion(mono, sampleRate) {
+  const WIN = 1024, HOP = 512, half = WIN / 2;
+  const nFrames = Math.max(0, Math.floor((mono.length - WIN) / HOP));
+  if (nFrames < 12) return [];
+  const hann = new Float32Array(WIN);
+  for (let i = 0; i < WIN; i++) hann[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (WIN - 1));
+  const kickHi = Math.max(2, Math.round(160 * WIN / sampleRate));
+  const topBin = Math.min(half - 4, Math.round(11000 * WIN / sampleRate));
+  const pe = new Float32Array(nFrames);       // percussive energy per frame
+  const pk = new Float32Array(nFrames);       // percussive kick-band energy
+  const re = new Float32Array(WIN), im = new Float32Array(WIN);
+  const CH = 1500, M = 4;                     // chunked with median margins
+  for (let start = 0; start < nFrames; start += CH) {
+    const end = Math.min(nFrames, start + CH);
+    const lo = Math.max(0, start - M), hi = Math.min(nFrames, end + M);
+    const rows = hi - lo;
+    const mag = new Float32Array(rows * half);
+    for (let f = lo; f < hi; f++) {
+      const off = f * HOP;
+      for (let i = 0; i < WIN; i++) { re[i] = mono[off + i] * hann[i]; im[i] = 0; }
+      fftRadix2(re, im);
+      const r = (f - lo) * half;
+      for (let b = 0; b < half; b++) mag[r + b] = Math.sqrt(re[b] * re[b] + im[b] * im[b]);
+    }
+    for (let f = Math.max(start, lo + M); f < Math.min(end, hi - M); f++) {
+      const r = (f - lo) * half;
+      let sum = 0, ksum = 0;
+      for (let b = 4; b < topBin; b++) {
+        const m = mag[r + b];
+        // harmonic estimate: median across time at this bin
+        const H = med9(mag[r - 4 * half + b], mag[r - 3 * half + b], mag[r - 2 * half + b],
+                       mag[r - half + b], m, mag[r + half + b], mag[r + 2 * half + b],
+                       mag[r + 3 * half + b], mag[r + 4 * half + b]);
+        // percussive estimate: median across frequency at this frame
+        const P = med9(mag[r + b - 4], mag[r + b - 3], mag[r + b - 2], mag[r + b - 1], m,
+                       mag[r + b + 1], mag[r + b + 2], mag[r + b + 3], mag[r + b + 4]);
+        const w = (P * P) / (P * P + H * H + 1e-12); // soft percussive mask
+        const pv = m * w;
+        sum += pv;
+        if (b <= kickHi) ksum += pv;
+      }
+      pe[f] = sum; pk[f] = ksum;
+    }
+  }
+  // adaptive peak picking on the percussive energy envelope
+  const W = Math.max(4, Math.round(0.35 * sampleRate / HOP));
+  let globalMax = 0;
+  for (let f = 0; f < nFrames; f++) if (pe[f] > globalMax) globalMax = pe[f];
+  if (globalMax <= 0) return [];
+  const out = [];
+  let lastFrame = -1e9;
+  for (let f = 2; f < nFrames - 2; f++) {
+    let sum = 0, cnt = 0;
+    for (let k = Math.max(0, f - W); k <= Math.min(nFrames - 1, f + W); k++) { sum += pe[k]; cnt++; }
+    const mean = sum / cnt;
+    let dev = 0;
+    for (let k = Math.max(0, f - W); k <= Math.min(nFrames - 1, f + W); k++) dev += Math.abs(pe[k] - mean);
+    dev /= cnt;
+    const thr = mean + Math.max(1.0 * dev, 0.015 * globalMax);
+    if (pe[f] <= thr) continue;
+    if (pe[f] < pe[f - 1] || pe[f] < pe[f + 1]) continue;
+    if (f - lastFrame < Math.round(0.09 * sampleRate / HOP)) continue;
+    lastFrame = f;
+    out.push({
+      t: Math.round((f * HOP + WIN / 2) / sampleRate * 1000) / 1000,
+      strength: Math.round(pe[f] / (mean + 1e-9) * 100) / 100,
+      kickShare: Math.round(pk[f] / (pe[f] + 1e-9) * 100) / 100
+    });
+  }
+  return out;
+}
+
+/* Booms — audible low-frequency thumps, found in the time domain: moving-
+   average lowpass (~<150Hz), 10ms RMS envelope, prominent local maxima.
+   This is what a listener calls "the boom"; it becomes the Easy chart. */
+function detectBooms(mono, sampleRate) {
+  const K = Math.max(8, Math.round(sampleRate / 147));
+  const hop = Math.round(sampleRate * 0.01);
+  const nF = Math.floor(mono.length / hop);
+  if (nF < 40) return [];
+  const env = new Float32Array(nF);
+  let acc = 0, fi = 0, fs = 0, cnt = 0;
+  const lim = nF * hop;
+  for (let i = 0; i < lim; i++) {
+    acc += mono[i]; if (i >= K) acc -= mono[i - K];
+    const lp = acc / K;
+    fs += lp * lp; cnt++;
+    if (cnt === hop) { env[fi++] = Math.sqrt(fs / hop); fs = 0; cnt = 0; }
+  }
+  const out = [];
+  let lastT = -1e9;
+  for (let f = 15; f < nF - 15; f++) {
+    let isMax = true, sum = 0, c = 0;
+    for (let k = f - 15; k <= f + 15; k++) { if (env[k] > env[f]) isMax = false; sum += env[k]; c++; }
+    const mean = sum / c;
+    if (!isMax || env[f] <= mean * 1.35) continue;
+    const t = f * 0.01;
+    if (t - lastT < 0.25) continue;
+    lastT = t;
+    out.push({ t: Math.round(t * 1000) / 1000,
+               strength: Math.round(env[f] / (mean + 1e-9) * 100) / 100 });
+  }
+  return out;
+}
+
+/* =====================================================================
+   SUSTAIN — how long a note actually rings, so audio imports can carry
+   real hold durations instead of placeholders. Time-domain RMS envelope
+   (no FFT): ~40x cheaper than a spectral pass and, with the attack-anchored
+   peak search below, agrees with a spectral measurement ~95% of the time on
+   real music. Validated against known exponential decays.
+   ===================================================================== */
+const SUSTAIN_HOP = 0.01, SUSTAIN_DECAY = 0.4, SUSTAIN_MAX = 4;
+function sustainEnvelope(mono, sampleRate) {
+  const hop = Math.max(1, Math.round(sampleRate * SUSTAIN_HOP));
+  const n = Math.floor(mono.length / hop);
+  const env = new Float32Array(n);
+  for (let f = 0; f < n; f++) {
+    let s = 0;
+    const off = f * hop;
+    for (let i = 0; i < hop; i++) { const v = mono[off + i]; s += v * v; }
+    env[f] = Math.sqrt(s / hop);
+  }
+  return { env, hopSec: hop / sampleRate };
+}
+/* Seconds a note at time t keeps sounding. The attack peak is located in
+   [t-20ms, t+60ms] so a frame of misalignment can't distort the result --
+   anchoring on the peak rather than on t was the difference between a
+   trustworthy measurement and one inflated by 2x. */
+function sustainAt(info, t, decayFrac) {
+  if (!info || !info.env || !info.env.length) return 0;
+  const { env, hopSec } = info;
+  const frac = decayFrac || SUSTAIN_DECAY;
+  const lo = Math.max(0, Math.round((t - 0.020) / hopSec));
+  const hi = Math.min(env.length - 1, Math.round((t + 0.060) / hopSec));
+  let peak = 0, pf = lo;
+  for (let f = lo; f <= hi; f++) if (env[f] > peak) { peak = env[f]; pf = f; }
+  if (peak <= 0) return 0;
+  const lim = Math.min(env.length, pf + Math.round(SUSTAIN_MAX / hopSec));
+  for (let f = pf + 1; f < lim; f++)
+    if (env[f] < peak * frac) return Math.round((f - pf) * hopSec * 1000) / 1000;
+  return Math.round((lim - pf) * hopSec * 1000) / 1000;
+}
+
+function estimateBPM(onsets) {
+  if (onsets.length < 8) return 120;
+  const hist = new Map();
+  for (let i = 1; i < onsets.length; i++) {
+    let iv = onsets[i].t - onsets[i - 1].t;
+    if (iv <= 0.05) continue;
+    while (iv < 0.33) iv *= 2;
+    while (iv > 1.0) iv /= 2;
+    const bin = Math.round(iv * 100);
+    hist.set(bin, (hist.get(bin) || 0) + 1);
+  }
+  let best = 50, bestC = 0;
+  for (const [bin, c] of hist) if (c > bestC) { bestC = c; best = bin; }
+  return Math.max(50, Math.min(220, Math.round(60 / (best / 100))));
+}
+
+/* Plain-language warning when a recording's analysis suggests the chart
+   will track poorly. Deliberately conservative: silence unless clearly bad. */
+function importAdvisory(onsets, duration) {
+  if (!onsets.length || duration <= 0) return null;
+  const density = onsets.length / duration;
+  const boomShare = onsets.filter(o => (o.kick || 0) >= 2.2).length / onsets.length;
+  if (density < 0.4)
+    return "Very few clear attacks were heard — this chart will be sparse. A paired MIDI would chart this song better.";
+  if (density > 5)
+    return "This mix is extremely dense — the chart may not track individual hits well. A paired MIDI would chart it better.";
+  if (boomShare < 0.08)
+    return "Almost no drum-register hits were heard — Easy may not follow a beat. A paired MIDI would chart this song better.";
+  return null;
+}
+
+function audioSongFromOnsets(onsets, duration, title, fileTag, percussion, booms, sustainInfo) {
+  // With a sustain envelope, every note carries the ring measured from the
+  // recording; buildChart then decides which of those become holds AFTER
+  // thinning, when the chart's real spacing is known. Without one, the old
+  // placeholder durations are used so stored songs behave exactly as before.
+  const ringOf = (t, fallback) =>
+    sustainInfo ? Math.max(0.05, Math.min(SUSTAIN_MAX, sustainAt(sustainInfo, t))) : fallback;
+  const bms = booms || [];
+  let perc = percussion || [];
+  if (!onsets.length && !perc.length && !bms.length)
+    throw new Error("No clear note attacks were detected in this recording.");
+  const notes = [];
+  const kickScore = (p) => p.strength * (0.25 + (p.kickShare || 0));
+  // hygiene cap on percussion density; booms are self-limited by their min gap
+  const cap = Math.max(24, Math.round(duration * 3));
+  if (perc.length > cap)
+    perc = perc.slice().sort((x, y) => kickScore(y) - kickScore(x) || x.t - y.t)
+               .slice(0, cap).sort((x, y) => x.t - y.t);
+  const nearSorted = (times, t, w) => {
+    let lo = 0, hi = times.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (times[mid] < t) lo = mid + 1; else hi = mid; }
+    return (lo < times.length && Math.abs(times[lo] - t) <= w) ||
+           (lo > 0 && Math.abs(times[lo - 1] - t) <= w);
+  };
+  // TIER 1 — booms: the audible thumps; Easy is built from these
+  const bt = bms.map(x => x.t);
+  // alternate booms across two low pitches -> two lanes, so the per-lane
+  // gap doesn't throttle a fast drum line down to half its hits
+  const BOOM_CYCLE = [0, 2, 1, 3], PERC_CYCLE = [1, 3, 0, 2]; // hand-alternating
+  bms.forEach((bm, i) =>
+    notes.push({ t: bm.t, d: ringOf(bm.t, 0.15), p: 34, lane: BOOM_CYCLE[i % 4],
+                 v: Math.min(127, 105 + Math.min(22, Math.round((bm.strength - 1) * 8))) }));
+  // TIER 2 — other percussion (snare/hat/cymbal), not re-hearing a boom
+  const keptPercT = [];
+  let pi = 0;
+  for (const p of perc) {
+    if (nearSorted(bt, p.t, 0.06)) continue;
+    keptPercT.push(p.t);
+    notes.push({ t: p.t, d: ringOf(p.t, 0.15), p: 48, lane: PERC_CYCLE[pi++ % 4],
+                 v: Math.min(100, 88 + Math.min(12, Math.round(kickScore(p) * 2))) });
+  }
+  // TIER 3 — melodic/other attacks from spectral flux
+  for (let i = 0; i < onsets.length; i++) {
+    const o = onsets[i];
+    if (nearSorted(bt, o.t, 0.06) || nearSorted(keptPercT, o.t, 0.06)) continue;
+    const next = onsets[i + 1];
+    const midi = Math.max(30, Math.min(100, Math.round(69 + 12 * Math.log2(Math.max(40, o.freq) / 440))));
+    notes.push({ t: o.t,
+                 d: ringOf(o.t, Math.min(0.3, next ? Math.max(0.08, next.t - o.t - 0.05) : 0.25)),
+                 p: midi,
+                 v: Math.max(40, Math.min(86, Math.round(45 + o.strength * 4 + (o.low || 0) * 20))) });
+  }
+  notes.sort((a, b) => a.t - b.t || a.p - b.p);
+  return {
+    id: "audio-" + hashStr((fileTag || title) + ":" + duration.toFixed(2) + ":" + notes.length),
+    title: title || "Audio import",
+    composer: "Audio import", source: "audio",
+    bpm: estimateBPM((percussion && percussion.length >= 8) ? percussion : onsets),
+    tracks: [{ name: "Detected", inst: "piano", isDrum: false, prog: 0, notes }],
+    duration
+  };
+}
+
+/* =====================================================================
+   WEEKLY EVENT — deterministic from the date, so every player worldwide
+   gets the same song + difficulty each week. Cycle repeats after 24 weeks.
+   ===================================================================== */
+const EVT_EPOCH = Date.UTC(2026, 6, 13);       // Monday 2026-07-13 00:00 UTC
+const EVT_WEEK = 7 * 24 * 3600 * 1000;
+const EVT_DIFFS = ["normal", "hard", "easy"];
+function eventForDate(ms) {
+  const idx = Math.max(0, Math.floor((ms - EVT_EPOCH) / EVT_WEEK));
+  return { idx,
+           songIdx: (idx * 7) % BUNDLED.length,  // 7 coprime with 15: full song cycle
+           diff: EVT_DIFFS[idx % 3],
+           endsAt: EVT_EPOCH + (idx + 1) * EVT_WEEK };
+}
+
+/* Share codes — compact, checksummed result strings for friendly competition
+   on copies without the shared board. Not tamper-proof, just tamper-annoying. */
+function chk(body) { return hashStr("cadence:" + body).padStart(4, "0").slice(0, 4); }
+function makeShareCode(idx, name, score, accMille, combo) {
+  const clean = String(name).replace(/[^A-Za-z0-9_]/g, "").slice(0, 14) || "PLAYER";
+  const body = [idx.toString(36), score.toString(36), accMille.toString(36),
+                combo.toString(36), clean].join(".");
+  return "CAD-" + body + "-" + chk(body);
+}
+function parseShareCode(str) {
+  const m = /^CAD-(.+)-([0-9a-z]{4})$/.exec(String(str).trim());
+  if (!m || chk(m[1]) !== m[2]) return null;
+  const parts = m[1].split(".");
+  if (parts.length !== 5) return null;
+  const [idx, score, accMille, combo] = parts.slice(0, 4).map(x => parseInt(x, 36));
+  if (![idx, score, accMille, combo].every(Number.isFinite)) return null;
+  if (!/^[A-Za-z0-9_]{1,14}$/.test(parts[4])) return null;
+  return { idx, score, accMille, combo, name: parts[4] };
+}
+
+/* =====================================================================
+   CRESCENDO — the densest windows of a chart become 2x-score zones,
+   with a flat bonus for perfecting a whole zone. Deterministic.
+   ===================================================================== */
+const CRESC_BONUS = 1000;
+function findCrescendos(chart, duration) {
+  if (!chart.length || duration < 25) return [];
+  const win = Math.max(8, Math.min(16, duration * 0.12));
+  const want = duration >= 150 ? 3 : duration >= 45 ? 2 : 1;
+  const times = chart.map(n => n.t);
+  const step = 0.5;
+  const zones = [];
+  // one zone per segment of the song (beginning / middle / end), each the
+  // densest window WITHIN its segment — spread is guaranteed by construction
+  for (let s = 0; s < want; s++) {
+    const segStart = (duration / want) * s;
+    const segEnd = Math.min(duration, segStart + duration / want);
+    const maxStart = Math.max(segStart, segEnd - win);
+    let bestC = 0, bestS = -1;
+    let lo = 0, hi = 0;
+    for (let t = 0; t <= maxStart + 1e-9; t += step) {
+      while (lo < times.length && times[lo] < t) lo++;
+      while (hi < times.length && times[hi] < t + win) hi++;
+      if (t < segStart) continue;
+      const c = hi - lo;
+      if (c > bestC) { bestC = c; bestS = Math.round(t * 2) / 2; }
+    }
+    if (bestC > 0)
+      zones.push({ start: bestS, end: Math.round((bestS + win) * 100) / 100 });
+  }
+  zones.sort((a, b) => a.start - b.start);
+  return zones;
+}
+
+/* =====================================================================
+   FORTISSIMO — performance-earned score boost. Perfects charge the meter
+   (Goods a trickle); when it fires, every note scores x2 for a stretch,
+   stacking with Crescendo zones for x4. Charge requirement scales with
+   chart size so even short songs can fire it at least once.
+   ===================================================================== */
+/* Combo multiplier — sustained accuracy scales the note score itself:
+   first 10 combo at x1, then +0.01 per step, capping at x2 by combo 110. */
+const COMBO_GRACE = 10, COMBO_STEP = 0.01, COMBO_MAX = 2;
+function comboMultAt(combo, totalNotes) {
+  // charts over 150 notes: the standard curve (grace 10, +0.01/step, x2 at 110).
+  // smaller charts compress the whole curve proportionally so x2 stays
+  // reachable (~73% of the chart), matching the standard exactly at 150.
+  const small = totalNotes != null && totalNotes <= 150;
+  const g = small ? Math.max(2, Math.round(totalNotes * COMBO_GRACE / 150)) : COMBO_GRACE;
+  const cap = small ? Math.max(g + 1, Math.round(totalNotes * 110 / 150)) : 110;
+  if (combo <= g) return 1;
+  return Math.min(COMBO_MAX, 1 + (combo - g) * ((COMBO_MAX - 1) / (cap - g)));
+}
+
+const FORT_MULT = 2, FORT_PERFECT = 1, FORT_GOOD = 0.22;
+function fortReqFor(totalNotes) {
+  return Math.max(24, Math.min(220, Math.round(totalNotes * 0.38)));
+}
+function fortDurFor(effDur) {
+  return Math.max(8, Math.min(18, (effDur || 200) * 0.08));
+}
+function fortActiveAt(run, time) { return time < run.fortUntil; }
+function fortActivate(run, time) {
+  if (time < run.fortUntil) return false;
+  if (run.fortMeter < run.fortReq) return false;
+  run.fortUntil = time + run.fortDur;
+  run.fortMeter = 0;
+  run.fortCount++;
+  return true;
+}
+
+/* Best constant offset (ms) aligning chart note times to detected onsets.
+   Scans ±1.5s in 10ms steps; frac = share of chart notes matched within 40ms. */
+function bestAlignment(chartTimes, onsetTimes) {
+  if (!chartTimes.length || !onsetTimes.length) return { offsetMs: 0, matched: 0, frac: 0 };
+  const ot = onsetTimes.slice().sort((a, b) => a - b);
+  let best = { offsetMs: 0, matched: -1, dev: Infinity };
+  for (let ms = -1500; ms <= 1500; ms += 10) {
+    const o = ms / 1000;
+    let m = 0, j = 0, dev = 0;
+    for (const t of chartTimes) {
+      const target = t + o;
+      while (j < ot.length && ot[j] < target - 0.04) j++;
+      const dR = j < ot.length ? Math.abs(ot[j] - target) : Infinity;
+      const dL = j > 0 ? Math.abs(ot[j - 1] - target) : Infinity;
+      const d = Math.min(dR, dL);
+      if (d <= 0.04) { m++; dev += d; }
+    }
+    // most matches wins; ties broken by tightest total deviation (centers the plateau)
+    if (m > best.matched || (m === best.matched && dev < best.dev))
+      best = { offsetMs: ms, matched: m, dev };
+  }
+  best.frac = best.matched / chartTimes.length;
+  return best;
+}
+
+/* Cut a chart to the first `len` seconds (charts are time-sorted). */
+function truncateChart(chart, len) {
+  if (len == null || !isFinite(len)) return chart;
+  const out = [];
+  for (const n of chart) { if (n.t <= len) out.push(n); else break; }
+  return out;
+}
+
+const HOLD_BONUS = 0.5; // a completed hold pays 50% of its head points
+function completeHold(run, note) {
+  note.holding = false; note.holdDone = true; note.holdFrac = 1;
+  run.holdsDone++;
+  run.score += Math.round(note.headPts * HOLD_BONUS); // Fork A(2): +50% of head points
+}
+function laneRelease(run, lane, time) {
+  for (const n of run.notes) {
+    if (!n.holding || n.lane !== lane) continue;
+    if (time >= n.t + n.d - 0.15) completeHold(run, n);
+    else {
+      // released early: pay the same 50% bonus prorated to how much was held,
+      // so letting go to reach a far lane still banks what you earned
+      const frac = Math.max(0, Math.min(1, (time - n.t) / n.d));
+      n.holding = false; n.holdDone = false; n.holdFrac = frac;
+      if (frac > 0) {
+        run.holdsPartial++;
+        run.holdPartialFrac += frac;
+        run.score += Math.round(n.headPts * HOLD_BONUS * frac);
+      }
+    }
+    return n.holdDone;
+  }
+  return null;
+}
+function tickHolds(run, time) {
+  for (const n of run.notes)
+    if (n.holding && time >= n.t + n.d) completeHold(run, n);
+}
+
+function finishRun(run) {
+  for (const n of run.notes) if (n.holding) completeHold(run, n); // held to song end
+  for (const n of run.notes) if (!n.hit && n.grade !== "miss") { n.grade = "miss"; run.miss++; }
+  for (let i = 0; i < run.zoneStats.length; i++) {
+    const zs = run.zoneStats[i];
+    if (zs.total > 0 && zs.perfect === zs.total) { run.score += CRESC_BONUS; run.crescendoPerfect++; }
+  }
+  run.combo = 0; run.done = true;
+  return makeResults(run);
+}
+
+function makeResults(run) {
+  const acc = run.total ? (run.perfect + 0.5 * run.good) / run.total : 0;
+  const grade = acc >= 0.95 ? "S" : acc >= 0.88 ? "A" : acc >= 0.75 ? "B"
+              : acc >= 0.60 ? "C" : acc >= 0.40 ? "D" : "F";
+  return {
+    version: 1,
+    song: run.song, difficulty: run.difficulty,
+    perfect: run.perfect, good: run.good, miss: run.miss,
+    maxCombo: run.maxCombo, accuracy: acc, score: run.score, grade,
+    holdsTotal: run.holdsTotal, holdsDone: run.holdsDone,
+    holdsPartial: run.holdsPartial,
+    holdPartialAvg: run.holdsPartial ? run.holdPartialFrac / run.holdsPartial : 0,
+    crescendoZones: run.zones.length, crescendoPerfect: run.crescendoPerfect,
+    fortissimos: run.fortCount,
+    total: run.total, at: 0 /* filled by shell */
+  };
+}
+
+/* =====================================================================
+   BUNDLED SONGS — public-domain works hand-arranged for Cadence.
+   Compact form: notes as [beat, durBeats, midiPitch]; expanded at load.
+   ===================================================================== */
+const N = (arr) => arr; // readability marker for note arrays
+
+const BUNDLED_RAW = [
+{
+  id: "ode-to-joy", bar: 4, form: [{}, {bassX:2}, {oct:12}, {oct:12,bassX:2}], title: "Ode to Joy", composer: "Beethoven", bpm: 120, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([
+      // A
+      [0,1,64],[1,1,64],[2,1,65],[3,1,67],[4,1,67],[5,1,65],[6,1,64],[7,1,62],
+      [8,1,60],[9,1,60],[10,1,62],[11,1,64],[12,1.5,64],[13.5,.5,62],[14,2,62],
+      // A'
+      [16,1,64],[17,1,64],[18,1,65],[19,1,67],[20,1,67],[21,1,65],[22,1,64],[23,1,62],
+      [24,1,60],[25,1,60],[26,1,62],[27,1,64],[28,1.5,62],[29.5,.5,60],[30,2,60],
+      // B
+      [32,1,62],[33,1,62],[34,1,64],[35,1,60],[36,1,62],[37,.5,64],[37.5,.5,65],[38,1,64],[39,1,60],
+      [40,1,62],[41,.5,64],[41.5,.5,65],[42,1,64],[43,1,62],[44,1,60],[45,1,62],[46,2,55],
+      // A''
+      [48,1,64],[49,1,64],[50,1,65],[51,1,67],[52,1,67],[53,1,65],[54,1,64],[55,1,62],
+      [56,1,60],[57,1,60],[58,1,62],[59,1,64],[60,1.5,62],[61.5,.5,60],[62,2,60]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [0,2,48],[2,2,43],[4,2,48],[6,2,43],[8,2,45],[10,2,43],[12,2,43],[14,2,43],
+      [16,2,48],[18,2,43],[20,2,48],[22,2,43],[24,2,45],[26,2,43],[28,2,43],[30,2,48],
+      [32,2,43],[34,2,48],[36,2,43],[38,2,48],[40,2,43],[42,2,45],[44,2,43],[46,2,43],
+      [48,2,48],[50,2,43],[52,2,48],[54,2,43],[56,2,45],[58,2,43],[60,2,43],[62,2,48]
+    ]) }
+  ]
+},
+{
+  id: "twinkle", bar: 4, form: [{}, {oct:12,bassX:2}, {bassX:2}], title: "Twinkle Variations", composer: "Traditional", bpm: 104, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([
+      [0,1,60],[1,1,60],[2,1,67],[3,1,67],[4,1,69],[5,1,69],[6,2,67],
+      [8,1,65],[9,1,65],[10,1,64],[11,1,64],[12,1,62],[13,1,62],[14,2,60],
+      [16,1,67],[17,1,67],[18,1,65],[19,1,65],[20,1,64],[21,1,64],[22,2,62],
+      [24,1,67],[25,1,67],[26,1,65],[27,1,65],[28,1,64],[29,1,64],[30,2,62],
+      [32,1,60],[33,1,60],[34,1,67],[35,1,67],[36,1,69],[37,1,69],[38,2,67],
+      [40,1,65],[41,1,65],[42,1,64],[43,1,64],[44,1,62],[45,1,62],[46,2,60],
+      // varied final round: running eighths
+      [48,.5,60],[48.5,.5,62],[49,.5,60],[49.5,.5,62],[50,1,67],[51,1,67],[52,.5,69],[52.5,.5,71],[53,.5,69],[53.5,.5,67],[54,2,67],
+      [56,1,65],[57,1,65],[58,1,64],[59,1,64],[60,.5,62],[60.5,.5,64],[61,.5,62],[61.5,.5,59],[62,2,60]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [0,2,48],[2,2,48],[4,2,53],[6,2,48],[8,2,53],[10,2,48],[12,2,43],[14,2,48],
+      [16,2,48],[18,2,53],[20,2,48],[22,2,43],[24,2,48],[26,2,53],[28,2,48],[30,2,43],
+      [32,2,48],[34,2,48],[36,2,53],[38,2,48],[40,2,53],[42,2,48],[44,2,43],[46,2,48],
+      [48,2,48],[50,2,48],[52,2,53],[54,2,48],[56,2,53],[58,2,48],[60,2,43],[62,2,48]
+    ]) }
+  ]
+},
+{
+  id: "minuet-g", bar: 3, form: [{}, {bassX:2}, {oct:12}, {oct:12,bassX:2}, {bassX:2}], title: "Minuet in G", composer: "Petzold", bpm: 116, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([
+      [0,1,74],[1,.5,67],[1.5,.5,69],[2,.5,71],[2.5,.5,72],
+      [3,1,74],[4,1,67],[5,1,67],
+      [6,1,76],[7,.5,72],[7.5,.5,74],[8,.5,76],[8.5,.5,78],
+      [9,1,79],[10,1,67],[11,1,67],
+      [12,1,72],[13,.5,74],[13.5,.5,72],[14,.5,71],[14.5,.5,69],
+      [15,1,71],[16,.5,72],[16.5,.5,71],[17,.5,69],[17.5,.5,67],
+      [18,1,66],[19,.5,67],[19.5,.5,69],[20,.5,71],[20.5,.5,67],
+      [21,1.5,71],[22.5,.5,69],[23,1,69],
+      // repeat of first phrase to round it out
+      [24,1,74],[25,.5,67],[25.5,.5,69],[26,.5,71],[26.5,.5,72],
+      [27,1,74],[28,1,67],[29,1,67],
+      [30,1,76],[31,.5,72],[31.5,.5,74],[32,.5,76],[32.5,.5,78],
+      [33,1,79],[34,1,67],[35,1,67],
+      [36,1,72],[37,.5,74],[37.5,.5,72],[38,.5,71],[38.5,.5,69],
+      [39,1,71],[40,.5,72],[40.5,.5,71],[41,.5,69],[41.5,.5,67],
+      [42,1,69],[43,.5,71],[43.5,.5,69],[44,.5,67],[44.5,.5,66],
+      [45,3,67]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [0,3,55],[3,3,50],[6,3,48],[9,3,55],[12,3,45],[15,3,55],[18,3,50],[21,3,50],
+      [24,3,55],[27,3,50],[30,3,48],[33,3,55],[36,3,45],[39,3,55],[42,3,50],[45,3,55]
+    ]) }
+  ]
+},
+{
+  id: "greensleeves", bar: 3, form: [{}, {oct:12}, {bassX:2}, {oct:12,bassX:2}], title: "Greensleeves", composer: "Traditional", bpm: 96, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([
+      [0,1,69],
+      [1,2,72],[3,1,74],[4,1.5,76],[5.5,.5,77],[6,1,76],
+      [7,2,74],[9,1,71],[10,1.5,67],[11.5,.5,69],[12,1,71],
+      [13,2,72],[15,1,69],[16,1.5,69],[17.5,.5,68],[18,1,69],
+      [19,2,71],[21,1,68],[22,2,64],[24,1,69],
+      [25,2,72],[27,1,74],[28,1.5,76],[29.5,.5,77],[30,1,76],
+      [31,2,74],[33,1,71],[34,1.5,67],[35.5,.5,69],[36,1,71],
+      [37,1.5,72],[38.5,.5,71],[39,1,69],[40,1.5,68],[41.5,.5,66],[42,1,68],
+      [43,3,69]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [1,3,45],[4,3,43],[7,3,41],[10,3,43],[13,3,45],[16,3,41],[19,3,40],[22,3,40],
+      [25,3,45],[28,3,43],[31,3,41],[34,3,43],[37,3,45],[40,3,40],[43,3,45]
+    ]) }
+  ]
+},
+{
+  id: "korobeiniki", bar: 4, form: [{}, {oct:12}, {}, {oct:12}, {}], title: "Korobeiniki", composer: "Russian folk", bpm: 138, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "square", notes: N([
+      [0,1,76],[1,.5,71],[1.5,.5,72],[2,1,74],[3,.5,72],[3.5,.5,71],
+      [4,1,69],[5,.5,69],[5.5,.5,72],[6,1,76],[7,.5,74],[7.5,.5,72],
+      [8,1.5,71],[9.5,.5,72],[10,1,74],[11,1,76],
+      [12,1,72],[13,1,69],[14,2,69],
+      [16.5,1,74],[17.5,.5,77],[18,1,81],[19,.5,79],[19.5,.5,77],
+      [20,1.5,76],[21.5,.5,72],[22,1,76],[23,.5,74],[23.5,.5,72],
+      [24,1,71],[25,.5,71],[25.5,.5,72],[26,1,74],[27,1,76],
+      [28,1,72],[29,1,69],[30,1,69],
+      // second pass
+      [32,1,76],[33,.5,71],[33.5,.5,72],[34,1,74],[35,.5,72],[35.5,.5,71],
+      [36,1,69],[37,.5,69],[37.5,.5,72],[38,1,76],[39,.5,74],[39.5,.5,72],
+      [40,1.5,71],[41.5,.5,72],[42,1,74],[43,1,76],
+      [44,1,72],[45,1,69],[46,2,69]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [0,1,40],[1,1,52],[2,1,40],[3,1,52],[4,1,45],[5,1,57],[6,1,45],[7,1,57],
+      [8,1,44],[9,1,56],[10,1,47],[11,1,56],[12,1,45],[13,1,52],[14,1,40],[15,1,52],
+      [16,1,50],[17,1,57],[18,1,50],[19,1,57],[20,1,45],[21,1,57],[22,1,45],[23,1,57],
+      [24,1,44],[25,1,56],[26,1,47],[27,1,56],[28,1,45],[29,1,52],[30,1,40],[31,1,52],
+      [32,1,40],[33,1,52],[34,1,40],[35,1,52],[36,1,45],[37,1,57],[38,1,45],[39,1,57],
+      [40,1,44],[41,1,56],[42,1,47],[43,1,56],[44,1,45],[45,1,52],[46,1,40],[47,1,52]
+    ]) }
+  ]
+},
+{
+  id: "mountain-king", bar: 4, form: [{}, {oct:12}, {}, {oct:12}, {}], title: "In the Hall of the Mountain King", composer: "Grieg", bpm: 132, diffHint: "Hard",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([
+      // P1 low
+      [0,.5,52],[.5,.5,54],[1,.5,55],[1.5,.5,57],[2,.5,59],[2.5,.5,55],[3,1,59],
+      [4,.5,60],[4.5,.5,57],[5,1,60],[6,.5,59],[6.5,.5,55],[7,1,59],
+      [8,.5,52],[8.5,.5,54],[9,.5,55],[9.5,.5,57],[10,.5,59],[10.5,.5,55],[11,.5,59],[11.5,.5,62],
+      [12,1,61],[13,.5,59],[13.5,.5,55],[14,2,59],
+      // P1 again
+      [16,.5,52],[16.5,.5,54],[17,.5,55],[17.5,.5,57],[18,.5,59],[18.5,.5,55],[19,1,59],
+      [20,.5,60],[20.5,.5,57],[21,1,60],[22,.5,59],[22.5,.5,55],[23,1,59],
+      // octave up
+      [24,.5,64],[24.5,.5,66],[25,.5,67],[25.5,.5,69],[26,.5,71],[26.5,.5,67],[27,1,71],
+      [28,.5,72],[28.5,.5,69],[29,1,72],[30,.5,71],[30.5,.5,67],[31,1,71],
+      [32,.5,64],[32.5,.5,66],[33,.5,67],[33.5,.5,69],[34,.5,71],[34.5,.5,67],[35,.5,71],[35.5,.5,74],
+      [36,1,73],[37,.5,71],[37.5,.5,67],[38,2,71],
+      // driving finish
+      [40,.5,64],[40.5,.5,66],[41,.5,67],[41.5,.5,69],[42,.5,71],[42.5,.5,67],[43,.5,71],[43.5,.5,72],
+      [44,.5,71],[44.5,.5,67],[45,.5,71],[45.5,.5,72],[46,.5,71],[46.5,.5,69],[47,.5,67],[47.5,.5,66],
+      [48,2,64]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [0,.5,40],[1,.5,40],[2,.5,40],[3,.5,40],[4,.5,40],[5,.5,40],[6,.5,40],[7,.5,40],
+      [8,.5,40],[9,.5,40],[10,.5,40],[11,.5,40],[12,.5,40],[13,.5,40],[14,.5,40],[15,.5,40],
+      [16,.5,40],[17,.5,40],[18,.5,40],[19,.5,40],[20,.5,40],[21,.5,40],[22,.5,40],[23,.5,40],
+      [24,.5,52],[25,.5,52],[26,.5,52],[27,.5,52],[28,.5,52],[29,.5,52],[30,.5,52],[31,.5,52],
+      [32,.5,52],[33,.5,52],[34,.5,52],[35,.5,52],[36,.5,52],[37,.5,52],[38,.5,52],[39,.5,52],
+      [40,.5,52],[41,.5,52],[42,.5,52],[43,.5,52],[44,.5,52],[45,.5,52],[46,.5,52],[47,.5,52],[48,2,40]
+    ]) }
+  ]
+},
+{
+  id: "entertainer", bar: 4, form: [{}, {oct:12}, {}], title: "The Entertainer", composer: "Scott Joplin", bpm: 92, diffHint: "Hard",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([
+      [0,.5,62],[.5,.5,63],[1,.5,64],
+      [1.5,1,72],[2.5,.5,64],[3,1,72],[4,.5,64],[4.5,1.5,72],
+      [6,.5,72],[6.5,.5,74],[7,.5,75],[7.5,.5,76],[8,.5,72],[8.5,.5,74],[9,1,76],
+      [10,.5,71],[10.5,1,74],[11.5,1.5,72],
+      [13,.5,62],[13.5,.5,63],[14,.5,64],
+      [14.5,1,72],[15.5,.5,64],[16,1,72],[17,.5,64],[17.5,1.5,72],
+      [19,.5,69],[19.5,.5,67],[20,.5,66],[20.5,.5,69],[21,.5,72],[21.5,1,76],
+      [22.5,.5,74],[23,.5,72],[23.5,.5,69],[24,1.5,74],
+      // strain answer
+      [26,.5,62],[26.5,.5,63],[27,.5,64],
+      [27.5,1,72],[28.5,.5,64],[29,1,72],[30,.5,64],[30.5,1.5,72],
+      [32,.5,72],[32.5,.5,74],[33,.5,75],[33.5,.5,76],[34,.5,72],[34.5,.5,74],[35,1,76],
+      [36,.5,71],[36.5,1,74],[37.5,1.5,72],
+      [39,.5,72],[39.5,.5,74],[40,.5,76],[40.5,.5,72],[41,.5,74],[41.5,1,76],
+      [42.5,.5,72],[43,.5,74],[43.5,.5,72],[44,.5,76],[44.5,.5,72],[45,.5,74],[45.5,1,76],
+      [46.5,.5,72],[47,.5,74],[47.5,.5,72],[48,2,72]
+    ]) },
+    { name: "Bass", inst: "bass", notes: N([
+      [1.5,1,48],[2.5,1,55],[3.5,1,52],[4.5,1,55],[5.5,.5,48],
+      [6,1,48],[7,1,55],[8,1,52],[9,1,55],
+      [10,1,50],[11,1,55],[12,1,43],[13,.5,47],
+      [14.5,1,48],[15.5,1,55],[16.5,1,52],[17.5,1,55],
+      [19,1,50],[20,1,55],[21,1,48],[22,1,55],[23,1,43],[24,1.5,48],
+      [27.5,1,48],[28.5,1,55],[29.5,1,52],[30.5,1,55],
+      [32,1,48],[33,1,55],[34,1,52],[35,1,55],
+      [36,1,50],[37,1,55],[38,1,43],
+      [39.5,1,48],[40.5,1,55],[41.5,1,52],[42.5,1,55],
+      [43.5,1,48],[44.5,1,55],[45.5,1,52],[46.5,1,55],[47.5,.5,43],[48,2,48]
+    ]) }
+  ]
+},
+{
+  id: "fur-elise", bar: 4, form: [{}, {oct:12}, {}], title: "Für Elise", composer: "Beethoven", bpm: 76, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([
+      [0,.5,76],[.5,.5,75],[1,.5,76],[1.5,.5,75],[2,.5,76],[2.5,.5,71],[3,.5,74],[3.5,.5,72],
+      [4,1,69],[5.5,.5,60],[6,.5,64],[6.5,.5,69],
+      [7,1,71],[8.5,.5,64],[9,.5,68],[9.5,.5,71],
+      [10,1,72],[11.5,.5,64],
+      [12,.5,76],[12.5,.5,75],[13,.5,76],[13.5,.5,75],[14,.5,76],[14.5,.5,71],[15,.5,74],[15.5,.5,72],
+      [16,1,69],[17.5,.5,60],[18,.5,64],[18.5,.5,69],
+      [19,1,71],[20.5,.5,64],[21,.5,72],[21.5,.5,71],
+      [22,2,69],
+      // B phrase
+      [24,.5,71],[24.5,.5,72],[25,.5,74],[25.5,1,76],
+      [27,.5,67],[27.5,.5,77],[28,.5,76],[28.5,1,74],
+      [30,.5,65],[30.5,.5,76],[31,.5,74],[31.5,1,72],
+      [33,.5,64],[33.5,.5,74],[34,.5,72],[34.5,1,71],
+      // return
+      [36,.5,76],[36.5,.5,75],[37,.5,76],[37.5,.5,75],[38,.5,76],[38.5,.5,71],[39,.5,74],[39.5,.5,72],
+      [40,1,69],[41.5,.5,60],[42,.5,64],[42.5,.5,69],
+      [43,1,71],[44.5,.5,64],[45,.5,72],[45.5,.5,71],
+      [46,2,69]
+    ]) },
+    { name: "Bass", inst: "pluck", notes: N([
+      [4,.5,45],[4.5,.5,52],[5,.5,57],
+      [7,.5,40],[7.5,.5,52],[8,.5,56],
+      [10,.5,45],[10.5,.5,52],[11,.5,57],
+      [16,.5,45],[16.5,.5,52],[17,.5,57],
+      [19,.5,40],[19.5,.5,52],[20,.5,56],
+      [22,.5,45],[22.5,.5,52],[23,.5,57],
+      [24,.5,48],[26,.5,55],[27,.5,43],[29,.5,55],[30,.5,41],[32,.5,53],[33,.5,40],[35,.5,52],
+      [40,.5,45],[40.5,.5,52],[41,.5,57],
+      [43,.5,40],[43.5,.5,52],[44,.5,56],
+      [46,.5,45],[46.5,.5,52],[47,.5,57]
+    ]) }
+  ]
+},
+{
+  id: "canon-d", bar: 4, form: [{}, {bassX:2}, {oct:-12}, {bassX:2}], title: "Canon in D", composer: "Pachelbel", bpm: 100, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,2,78],[2,2,76],[4,2,74],[6,2,73],[8,2,71],[10,2,69],[12,2,71],[14,2,73],[16,1,74],[17,1,69],[18,1,73],[19,1,69],[20,1,74],[21,1,71],[22,1,73],[23,1,69],[24,1,71],[25,1,67],[26,1,69],[27,1,66],[28,1,67],[29,1,71],[30,1,73],[31,1,76],[32,0.5,78],[32.5,0.5,76],[33,0.5,74],[33.5,0.5,73],[34,0.5,71],[34.5,0.5,69],[35,0.5,71],[35.5,0.5,73],[36,0.5,74],[36.5,0.5,73],[37,0.5,71],[37.5,0.5,69],[38,0.5,67],[38.5,0.5,66],[39,0.5,67],[39.5,0.5,64],[40,0.5,66],[40.5,0.5,64],[41,0.5,62],[41.5,0.5,61],[42,0.5,59],[42.5,0.5,57],[43,0.5,59],[43.5,0.5,61],[44,0.5,62],[44.5,0.5,61],[45,0.5,59],[45.5,0.5,57],[46,0.5,55],[46.5,0.5,54],[47,0.5,55],[47.5,0.5,52],[48,4,74]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,50],[2,2,45],[4,2,47],[6,2,42],[8,2,43],[10,2,50],[12,2,43],[14,2,45],[16,2,50],[18,2,45],[20,2,47],[22,2,42],[24,2,43],[26,2,50],[28,2,43],[30,2,45],[32,2,50],[34,2,45],[36,2,47],[38,2,42],[40,2,43],[42,2,50],[44,2,43],[46,2,45],[48,4,50]]) }
+  ]
+},
+{
+  id: "nachtmusik", bar: 4, form: [{}, {bassX:2}, {oct:-12}, {oct:-12,bassX:2}], title: "Eine kleine Nachtmusik", composer: "Mozart", bpm: 120, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,1,67],[1.5,0.5,62],[2,1,67],[3.5,0.5,62],[4,0.5,67],[4.5,0.5,62],[5,0.5,67],[5.5,0.5,71],[6,2,74],[8,1,72],[9.5,0.5,69],[10,1,72],[11.5,0.5,69],[12,0.5,72],[12.5,0.5,69],[13,0.5,66],[13.5,0.5,69],[14,2,62],[16,0.5,71],[16.5,0.5,72],[17,0.5,74],[17.5,0.5,76],[18,0.5,78],[18.5,0.5,79],[19,0.5,78],[19.5,0.5,76],[20,1,74],[21,1,71],[22,2,67],[24,1,67],[25,1,71],[26,1,74],[27,1,79],[28,0.5,78],[28.5,0.5,76],[29,0.5,74],[29.5,0.5,72],[30,1,71],[31,1,67],[32,0.5,71],[32.5,0.5,72],[33,0.5,74],[33.5,0.5,76],[34,0.5,78],[34.5,0.5,79],[35,0.5,78],[35.5,0.5,76],[36,1,74],[37,1,71],[38,2,67],[40,1,67],[41,1,71],[42,1,74],[43,1,79],[44,0.5,78],[44.5,0.5,76],[45,0.5,74],[45.5,0.5,72],[46,1,71],[47,1,67]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,43],[2,2,43],[4,2,43],[6,2,50],[8,2,48],[10,2,48],[12,2,50],[14,2,43],[16,2,43],[18,2,48],[20,2,50],[22,2,43],[24,2,43],[26,2,50],[28,2,50],[30,2,43],[32,2,43],[34,2,48],[36,2,50],[38,2,43],[40,2,43],[42,2,50],[44,2,50],[46,2,43]]) }
+  ]
+},
+{
+  id: "blue-danube", bar: 3, form: [{}, {oct:-12}, {}, {oct:-12}, {}], title: "The Blue Danube", composer: "Johann Strauss II", bpm: 140, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,1,62],[1,1,66],[2,1,69],[3,2,81],[5,1,81],[6,2,78],[8,1,78],[9,1,62],[10,1,66],[11,1,69],[12,2,81],[14,1,81],[15,2,79],[17,1,79],[18,1,61],[19,1,64],[20,1,69],[21,2,81],[23,1,81],[24,2,76],[26,1,76],[27,1,61],[28,1,64],[29,1,69],[30,2,81],[32,1,81],[33,2,74],[35,1,74],[36,1,78],[37,1,76],[38,1,73],[39,3,74],[42,1,69],[43,1,66],[44,1,62],[45,3,62]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,1,50],[1,1,57],[2,1,57],[3,1,50],[4,1,57],[5,1,57],[6,1,50],[7,1,57],[8,1,57],[9,1,50],[10,1,57],[11,1,57],[12,1,50],[13,1,57],[14,1,57],[15,1,50],[16,1,57],[17,1,57],[18,1,45],[19,1,52],[20,1,52],[21,1,45],[22,1,52],[23,1,52],[24,1,45],[25,1,52],[26,1,52],[27,1,50],[28,1,57],[29,1,57],[30,1,50],[31,1,57],[32,1,57],[33,1,50],[34,1,57],[35,1,57],[36,1,45],[37,1,52],[38,1,52],[39,1,45],[40,1,52],[41,1,52],[42,1,50],[43,1,57],[44,1,57],[45,1,50],[46,1,57],[47,1,57]]) }
+  ]
+},
+{
+  id: "habanera", bar: 2, form: [{}, {oct:12}, {}], title: "Habanera (Carmen)", composer: "Bizet", bpm: 76, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,1.5,74],[1.5,0.5,73],[2,1,73],[3,0.5,72],[3.5,0.5,72],[4,1,72],[5,0.5,71],[5.5,0.5,70],[6,1,70],[7,0.5,69],[7.5,0.5,69],[8,1.5,69],[9.5,0.5,67],[10,1,65],[11,0.5,67],[11.5,0.5,69],[12,1.5,74],[13.5,0.5,73],[14,1,73],[15,0.5,72],[15.5,0.5,72],[16,1,72],[17,0.5,71],[17.5,0.5,70],[18,1,70],[19,0.5,69],[19.5,0.5,69],[20,2,69],[22,1,62],[23,0.5,65],[23.5,0.5,69],[24,1,69],[25,0.5,69],[25.5,0.5,70],[26,1,72],[27,1,74],[28,1,72],[29,0.5,70],[29.5,0.5,69],[30,1,67],[31,1,65],[32,1.5,67],[33.5,0.5,69],[34,2,70],[36,1,69],[37,0.5,67],[37.5,0.5,65],[38,1,64],[39,1,62],[40,2,62],[42,1,65],[43,1,64],[44,4,62]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,0.75,50],[0.75,0.25,57],[1,0.5,53],[1.5,0.5,57],[2,0.75,50],[2.75,0.25,57],[3,0.5,53],[3.5,0.5,57],[4,0.75,50],[4.75,0.25,57],[5,0.5,53],[5.5,0.5,57],[6,0.75,50],[6.75,0.25,57],[7,0.5,53],[7.5,0.5,57],[8,0.75,50],[8.75,0.25,57],[9,0.5,53],[9.5,0.5,57],[10,0.75,50],[10.75,0.25,57],[11,0.5,53],[11.5,0.5,57],[12,0.75,50],[12.75,0.25,57],[13,0.5,53],[13.5,0.5,57],[14,0.75,50],[14.75,0.25,57],[15,0.5,53],[15.5,0.5,57],[16,0.75,50],[16.75,0.25,57],[17,0.5,53],[17.5,0.5,57],[18,0.75,50],[18.75,0.25,57],[19,0.5,53],[19.5,0.5,57],[20,0.75,50],[20.75,0.25,57],[21,0.5,53],[21.5,0.5,57],[22,0.75,50],[22.75,0.25,57],[23,0.5,53],[23.5,0.5,57],[24,0.75,50],[24.75,0.25,57],[25,0.5,53],[25.5,0.5,57],[26,0.75,50],[26.75,0.25,57],[27,0.5,53],[27.5,0.5,57],[28,0.75,50],[28.75,0.25,57],[29,0.5,53],[29.5,0.5,57],[30,0.75,50],[30.75,0.25,57],[31,0.5,53],[31.5,0.5,57],[32,0.75,50],[32.75,0.25,57],[33,0.5,53],[33.5,0.5,57],[34,0.75,50],[34.75,0.25,57],[35,0.5,53],[35.5,0.5,57],[36,0.75,50],[36.75,0.25,57],[37,0.5,53],[37.5,0.5,57],[38,0.75,50],[38.75,0.25,57],[39,0.5,53],[39.5,0.5,57],[40,0.75,50],[40.75,0.25,57],[41,0.5,53],[41.5,0.5,57],[42,0.75,50],[42.75,0.25,57],[43,0.5,53],[43.5,0.5,57],[44,0.75,50],[44.75,0.25,57],[45,0.5,53],[45.5,0.5,57],[46,0.75,50],[46.75,0.25,57],[47,0.5,53],[47.5,0.5,57]]) }
+  ]
+},
+{
+  id: "turkish-march", bar: 4, form: [{}, {oct:-12}, {}, {oct:-12}, {}], title: "Turkish March", composer: "Mozart", bpm: 126, diffHint: "Hard",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,0.5,71],[0.5,0.5,69],[1,0.5,68],[1.5,0.5,69],[2,1,72],[3,0.5,74],[3.5,0.5,72],[4,0.5,71],[4.5,0.5,72],[5,1,76],[6,0.5,77],[6.5,0.5,76],[7,0.5,75],[7.5,0.5,76],[8,0.5,83],[8.5,0.5,81],[9,0.5,80],[9.5,0.5,81],[10,0.5,83],[10.5,0.5,81],[11,0.5,80],[11.5,0.5,81],[12,1,84],[13,0.5,81],[13.5,0.5,84],[14,1,83],[15,0.5,81],[15.5,0.5,79],[16,0.5,78],[16.5,0.5,76],[17,1,74],[18,0.5,76],[18.5,0.5,74],[19,0.5,72],[19.5,0.5,71],[20,2,69],[22,0.5,71],[22.5,0.5,69],[23,0.5,68],[23.5,0.5,69],[24,1,72],[25,0.5,74],[25.5,0.5,72],[26,0.5,71],[26.5,0.5,72],[27,1,76],[28,0.5,77],[28.5,0.5,76],[29,0.5,75],[29.5,0.5,76],[30,0.5,83],[30.5,0.5,81],[31,0.5,80],[31.5,0.5,81],[32,0.5,83],[32.5,0.5,81],[33,0.5,80],[33.5,0.5,81],[34,1,84],[35,0.5,81],[35.5,0.5,84],[36,0.5,72],[36.5,0.5,71],[37,0.5,69],[37.5,0.5,68],[38,1,69],[39,0.5,71],[39.5,0.5,72],[40,1,74],[41,0.5,72],[41.5,0.5,71],[42,2,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,0.5,45],[0.5,0.5,52],[1,0.5,57],[1.5,0.5,52],[2,0.5,45],[2.5,0.5,52],[3,0.5,57],[3.5,0.5,52],[4,0.5,40],[4.5,0.5,47],[5,0.5,52],[5.5,0.5,47],[6,0.5,40],[6.5,0.5,47],[7,0.5,52],[7.5,0.5,47],[8,0.5,45],[8.5,0.5,52],[9,0.5,57],[9.5,0.5,52],[10,0.5,45],[10.5,0.5,52],[11,0.5,57],[11.5,0.5,52],[12,0.5,40],[12.5,0.5,47],[13,0.5,52],[13.5,0.5,47],[14,0.5,40],[14.5,0.5,47],[15,0.5,52],[15.5,0.5,47],[16,0.5,45],[16.5,0.5,52],[17,0.5,57],[17.5,0.5,52],[18,0.5,45],[18.5,0.5,52],[19,0.5,57],[19.5,0.5,52],[20,0.5,40],[20.5,0.5,47],[21,0.5,52],[21.5,0.5,47],[22,0.5,40],[22.5,0.5,47],[23,0.5,52],[23.5,0.5,47],[24,0.5,45],[24.5,0.5,52],[25,0.5,57],[25.5,0.5,52],[26,0.5,45],[26.5,0.5,52],[27,0.5,57],[27.5,0.5,52],[28,0.5,40],[28.5,0.5,47],[29,0.5,52],[29.5,0.5,47],[30,0.5,40],[30.5,0.5,47],[31,0.5,52],[31.5,0.5,47],[32,0.5,45],[32.5,0.5,52],[33,0.5,57],[33.5,0.5,52],[34,0.5,45],[34.5,0.5,52],[35,0.5,57],[35.5,0.5,52],[36,0.5,40],[36.5,0.5,47],[37,0.5,52],[37.5,0.5,47],[38,0.5,40],[38.5,0.5,47],[39,0.5,52],[39.5,0.5,47],[40,0.5,45],[40.5,0.5,52],[41,0.5,57],[41.5,0.5,52],[42,0.5,45],[42.5,0.5,52],[43,0.5,57],[43.5,0.5,52]]) }
+  ]
+},
+{
+  id: "william-tell", bar: 4, form: [{}, {oct:-12}, {}, {oct:-12}, {}, {oct:-12}], title: "William Tell Finale", composer: "Rossini", bpm: 152, diffHint: "Hard",
+  tracks: [
+    { name: "Melody", inst: "square", notes: N([[0,0.5,67],[0.5,0.5,67],[1,1,67],[2,0.5,67],[2.5,0.5,67],[3,1,67],[4,0.5,67],[4.5,0.5,67],[5,0.5,67],[5.5,0.5,67],[6,0.5,67],[6.5,0.5,67],[7,1,67],[8,0.5,72],[8.5,0.5,72],[9,1,72],[10,0.5,72],[10.5,0.5,72],[11,1,72],[12,0.5,72],[12.5,0.5,74],[13,0.5,76],[13.5,0.5,74],[14,1,72],[15,0.5,67],[15.5,0.5,67],[16,0.5,72],[16.5,0.5,72],[17,1,72],[18,0.5,76],[18.5,0.5,76],[19,1,76],[20,0.5,79],[20.5,0.5,76],[21,0.5,72],[21.5,0.5,76],[22,2,72],[24,0.5,74],[24.5,0.5,74],[25,1,74],[26,0.5,74],[26.5,0.5,74],[27,1,74],[28,0.5,74],[28.5,0.5,76],[29,0.5,78],[29.5,0.5,76],[30,1,74],[31,0.5,71],[31.5,0.5,67],[32,0.5,72],[32.5,0.5,72],[33,1,72],[34,0.5,76],[34.5,0.5,76],[35,1,76],[36,0.5,79],[36.5,0.5,78],[37,0.5,76],[37.5,0.5,74],[38,2,72]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,0.5,36],[0.5,0.5,43],[1,0.5,36],[1.5,0.5,43],[2,0.5,36],[2.5,0.5,43],[3,0.5,36],[3.5,0.5,43],[4,0.5,36],[4.5,0.5,43],[5,0.5,36],[5.5,0.5,43],[6,0.5,36],[6.5,0.5,43],[7,0.5,36],[7.5,0.5,43],[8,0.5,36],[8.5,0.5,43],[9,0.5,36],[9.5,0.5,43],[10,0.5,36],[10.5,0.5,43],[11,0.5,36],[11.5,0.5,43],[12,0.5,36],[12.5,0.5,43],[13,0.5,36],[13.5,0.5,43],[14,0.5,36],[14.5,0.5,43],[15,0.5,36],[15.5,0.5,43],[16,0.5,36],[16.5,0.5,43],[17,0.5,36],[17.5,0.5,43],[18,0.5,36],[18.5,0.5,43],[19,0.5,36],[19.5,0.5,43],[20,0.5,36],[20.5,0.5,43],[21,0.5,36],[21.5,0.5,43],[22,0.5,36],[22.5,0.5,43],[23,0.5,36],[23.5,0.5,43],[24,0.5,36],[24.5,0.5,43],[25,0.5,36],[25.5,0.5,43],[26,0.5,36],[26.5,0.5,43],[27,0.5,36],[27.5,0.5,43],[28,0.5,36],[28.5,0.5,43],[29,0.5,36],[29.5,0.5,43],[30,0.5,36],[30.5,0.5,43],[31,0.5,36],[31.5,0.5,43],[32,0.5,36],[32.5,0.5,43],[33,0.5,36],[33.5,0.5,43],[34,0.5,36],[34.5,0.5,43],[35,0.5,36],[35.5,0.5,43],[36,0.5,36],[36.5,0.5,43],[37,0.5,36],[37.5,0.5,43],[38,0.5,36],[38.5,0.5,43],[39,0.5,36],[39.5,0.5,43]]) }
+  ]
+},
+{
+  id: "sakura", bar: 4, form: [{}, {bassX:2}, {oct:-12,bassX:2}], title: "Sakura Sakura", composer: "Traditional (Japan)", bpm: 80, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([[0,1,69],[1,1,69],[2,2,71],[4,1,69],[5,1,69],[6,2,71],[8,1,69],[9,1,71],[10,1,72],[11,1,71],[12,1,69],[13,0.5,71],[13.5,0.5,69],[14,2,65],[16,4,64],[20,1,72],[21,1,76],[22,2,77],[24,1,72],[25,1,76],[26,2,77],[28,1,76],[29,1,77],[30,1,76],[31,1,72],[32,2,71],[34,2,69],[36,1,69],[37,1,69],[38,2,71],[40,1,69],[41,1,69],[42,2,71],[44,4,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,4,45],[4,4,40],[8,4,45],[12,4,40],[16,4,45],[20,4,41],[24,4,45],[28,4,40],[32,4,45],[36,4,45],[40,4,40],[44,4,45]]) }
+  ]
+},
+{
+  id: "kojo-tsuki", bar: 4, form: [{}, {bassX:2}], title: "Kojō no Tsuki", composer: "Rentarō Taki", bpm: 66, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([[0,1,64],[1,1,69],[2,1,69],[3,1,71],[4,2,72],[6,1,71],[7,1,69],[8,1,71],[9,1,69],[10,1,68],[11,1,64],[12,3,69],[16,1,64],[17,1,69],[18,1,69],[19,1,71],[20,2,72],[22,1,71],[23,1,69],[24,1,71],[25,1,69],[26,1,68],[27,1,64],[28,3,69],[32,1,72],[33,1,71],[34,1,69],[35,1,71],[36,1,72],[37,1,74],[38,2,76],[40,1,76],[41,1,74],[42,1,72],[43,1,71],[44,1,69],[45,1,71],[46,1,68],[47,1,64],[48,4,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,45],[2,2,52],[4,2,41],[6,2,48],[8,2,40],[10,2,47],[12,2,45],[14,2,52],[16,2,45],[18,2,52],[20,2,41],[22,2,48],[24,2,40],[26,2,47],[28,2,45],[30,2,52],[32,2,48],[34,2,52],[36,2,45],[38,2,52],[40,2,45],[42,2,52],[44,2,40],[46,2,47],[48,4,45]]) }
+  ]
+},
+{
+  id: "toryanse", bar: 4, form: [{}, {bassX:2}, {oct:-12}, {oct:-12,bassX:2}], title: "Tōryanse", composer: "Traditional (Japan)", bpm: 112, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([[0,0.5,76],[0.5,0.5,76],[1,1,71],[2,0.5,76],[2.5,0.5,76],[3,1,71],[4,0.5,72],[4.5,0.5,71],[5,0.5,69],[5.5,0.5,71],[6,0.5,72],[6.5,0.5,71],[7,1,69],[8,0.5,69],[8.5,0.5,69],[9,0.5,71],[9.5,0.5,72],[10,1,71],[11,0.5,69],[11.5,0.5,65],[12,0.5,64],[12.5,0.5,65],[13,1,69],[14,2,64],[16,0.5,76],[16.5,0.5,76],[17,1,71],[18,0.5,76],[18.5,0.5,76],[19,1,72],[20,0.5,72],[20.5,0.5,71],[21,0.5,69],[21.5,0.5,71],[22,1,72],[23,1,76],[24,0.5,76],[24.5,0.5,77],[25,0.5,76],[25.5,0.5,72],[26,1,71],[27,0.5,69],[27.5,0.5,65],[28,0.5,64],[28.5,0.5,65],[29,1,69],[30,2,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,40],[2,2,45],[4,2,45],[6,2,40],[8,2,45],[10,2,41],[12,2,40],[14,2,40],[16,2,40],[18,2,45],[20,2,45],[22,2,40],[24,2,45],[26,2,41],[28,2,40],[30,2,45]]) }
+  ]
+},
+{
+  id: "soran-bushi", bar: 4, form: [{}, {oct:-12}, {}, {oct:-12}, {}], title: "Sōran Bushi", composer: "Traditional (Japan)", bpm: 108, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "square", notes: N([[0,1,69],[1,0.5,72],[1.5,0.5,69],[2,1.5,67],[3.5,0.5,69],[4,0.75,72],[4.75,0.25,74],[5,1,72],[6,0.5,76],[6.5,0.5,76],[7,1,74],[8,1,76],[9,0.5,74],[9.5,0.5,72],[10,1,74],[11,1,72],[12,0.5,69],[12.5,0.5,72],[13,1,69],[14,1.5,67],[15.5,0.5,64],[16,1,64],[17,0.5,67],[17.5,0.5,69],[18,1,72],[19,1,74],[20,0.5,72],[20.5,0.5,69],[21,1,67],[22,2,69],[24,1,69],[25,0.5,72],[25.5,0.5,69],[26,1.5,67],[27.5,0.5,69],[28,0.75,72],[28.75,0.25,74],[29,1,72],[30,0.5,76],[30.5,0.5,76],[31,1,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,1,45],[1,1,45],[2,1,40],[3,1,43],[4,1,45],[5,1,45],[6,1,40],[7,1,43],[8,1,45],[9,1,45],[10,1,40],[11,1,43],[12,1,45],[13,1,45],[14,1,40],[15,1,43],[16,1,45],[17,1,45],[18,1,40],[19,1,43],[20,1,45],[21,1,45],[22,1,40],[23,1,43],[24,1,45],[25,1,45],[26,1,40],[27,1,43],[28,1,45],[29,1,45],[30,1,40],[31,1,43]]) }
+  ]
+},
+{
+  id: "furusato", bar: 3, form: [{}, {bassX:2}, {oct:12}, {oct:12,bassX:2}], title: "Furusato", composer: "Teiichi Okano", bpm: 100, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "piano", notes: N([[0,1,62],[1,1,67],[2,1,67],[3,1,67],[4,1,69],[5,1,71],[6,1,71],[7,1,69],[8,1,67],[9,3,69],[12,1,71],[13,1,71],[14,1,72],[15,2,74],[17,1,71],[18,1,69],[19,1,71],[20,1,72],[21,3,71],[24,1,74],[25,1,76],[26,1,74],[27,1,71],[28,1,67],[29,1,69],[30,1,67],[31,1,64],[32,1,62],[33,3,67]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,3,43],[3,3,43],[6,3,48],[9,3,50],[12,3,43],[15,3,43],[18,3,48],[21,3,50],[24,3,43],[27,3,48],[30,3,50],[33,3,43]]) }
+  ]
+},
+{
+  id: "itsuki", bar: 4, form: [{}, {bassX:2}, {oct:12,bassX:2}], title: "Itsuki Lullaby", composer: "Traditional (Japan)", bpm: 63, diffHint: "Easy",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([[0,1,64],[1,1,67],[2,2,69],[4,1,69],[5,1,72],[6,2,69],[8,1,69],[9,1,67],[10,1,64],[11,1,62],[12,4,64],[16,1,64],[17,1,67],[18,2,69],[20,1,72],[21,1,74],[22,2,72],[24,1,69],[25,1,67],[26,1,64],[27,1,62],[28,4,64]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,4,45],[4,4,40],[8,4,45],[12,4,40],[16,4,45],[20,4,38],[24,4,45],[28,4,40]]) }
+  ]
+},
+{
+  id: "kuroda-bushi", bar: 4, form: [{}, {bassX:2}, {oct:12}, {oct:12,bassX:2}], title: "Kuroda Bushi", composer: "Traditional (Japan)", bpm: 92, diffHint: "Normal",
+  tracks: [
+    { name: "Melody", inst: "pluck", notes: N([[0,1,62],[1,1,62],[2,1,64],[3,1,67],[4,1.5,69],[5.5,0.5,67],[6,1,64],[7,1,62],[8,1,69],[9,1,69],[10,1,71],[11,1,74],[12,1.5,71],[13.5,0.5,69],[14,2,67],[16,1,74],[17,1,71],[18,1,69],[19,1,67],[20,1,69],[21,1,71],[22,2,69],[24,1,67],[25,1,64],[26,1,62],[27,1,64],[28,1.5,67],[29.5,0.5,64],[30,2,62]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,50],[2,2,45],[4,2,43],[6,2,50],[8,2,45],[10,2,50],[12,2,43],[14,2,45],[16,2,50],[18,2,45],[20,2,43],[22,2,45],[24,2,43],[26,2,50],[28,2,45],[30,2,50]]) },
+    { name: "Taiko", inst: "drums", notes: N([[0,0.5,36],[2,0.5,36],[3,0.5,38],[4,0.5,36],[6,0.5,36],[7,0.5,38],[8,0.5,36],[10,0.5,36],[11,0.5,38],[12,0.5,36],[14,0.5,36],[15,0.5,38],[16,0.5,36],[18,0.5,36],[19,0.5,38],[20,0.5,36],[22,0.5,36],[23,0.5,38],[24,0.5,36],[26,0.5,36],[27,0.5,38],[28,0.5,36],[30,0.5,36],[31,0.5,38]]) }
+  ]
+},
+{
+  id: "rokudan", bar: 4, form: [{}, {oct:-12}, {}], title: "Rokudan no Shirabe", composer: "Yatsuhashi Kengyō", bpm: 84, diffHint: "Hard",
+  tracks: [
+    { name: "Koto", inst: "pluck", notes: N([[0,2,76],[2,1,77],[3,1,76],[4,1,72],[5,1,71],[6,2,69],[8,0.5,69],[8.5,0.5,71],[9,0.5,72],[9.5,0.5,76],[10,1,77],[11,1,76],[12,0.5,72],[12.5,0.5,71],[13,1,72],[14,2,69],[16,0.5,76],[16.5,0.5,77],[17,0.5,76],[17.5,0.5,72],[18,0.5,71],[18.5,0.5,72],[19,1,71],[20,0.5,69],[20.5,0.5,71],[21,0.5,72],[21.5,0.5,71],[22,2,69],[24,1,64],[25,1,65],[26,1,69],[27,1,71],[28,0.5,72],[28.5,0.5,71],[29,0.5,69],[29.5,0.5,65],[30,2,64],[32,0.5,69],[32.5,0.5,72],[33,0.5,76],[33.5,0.5,77],[34,0.5,76],[34.5,0.5,72],[35,0.5,76],[35.5,0.5,72],[36,0.5,71],[36.5,0.5,72],[37,0.5,71],[37.5,0.5,69],[38,0.5,71],[38.5,0.5,69],[39,0.5,65],[39.5,0.5,64],[40,0.5,69],[40.5,0.5,71],[41,0.5,72],[41.5,0.5,76],[42,0.5,77],[42.5,0.5,76],[43,0.5,72],[43.5,0.5,76],[44,1,77],[45,0.5,76],[45.5,0.5,72],[46,2,69]]) },
+    { name: "Low strings", inst: "bass", notes: N([[0,2,45],[2,2,52],[4,2,40],[6,2,47],[8,2,45],[10,2,52],[12,2,41],[14,2,45],[16,2,45],[18,2,52],[20,2,40],[22,2,47],[24,2,41],[26,2,48],[28,2,40],[30,2,45],[32,2,45],[34,2,52],[36,2,40],[38,2,47],[40,2,45],[42,2,52],[44,2,40],[46,2,45]]) }
+  ]
+},
+{
+  id: "jiangjun-ling", bar: 4, form: [{}, {oct:-12}, {}, {oct:-12}, {}], title: "The General's Command", composer: "Traditional (China)", bpm: 100, diffHint: "Normal",
+  tracks: [
+    { name: "Suona", inst: "square", notes: N([[0,1.5,62],[1.5,0.5,64],[2,1,66],[3,1,69],[4,2,71],[6,1,69],[7,1,66],[8,1.5,71],[9.5,0.5,69],[10,1,66],[11,1,64],[12,2,62],[14,1,64],[15,1,66],[16,1,69],[17,0.5,71],[17.5,0.5,69],[18,1,66],[19,1,69],[20,1.5,74],[21.5,0.5,71],[22,2,69],[24,1,71],[25,1,74],[26,1,71],[27,1,69],[28,1,66],[29,0.5,64],[29.5,0.5,62],[30,2,62]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,1,50],[1,1,50],[2,1,45],[3,1,45],[4,1,50],[5,1,50],[6,1,45],[7,1,45],[8,1,50],[9,1,50],[10,1,45],[11,1,45],[12,1,50],[13,1,50],[14,1,45],[15,1,45],[16,1,50],[17,1,50],[18,1,45],[19,1,45],[20,1,50],[21,1,50],[22,1,45],[23,1,45],[24,1,50],[25,1,50],[26,1,45],[27,1,45],[28,1,50],[29,1,50],[30,1,45],[31,1,45]]) },
+    { name: "War drums", inst: "drums", notes: N([[0,0.5,36],[1,0.5,36],[2,0.5,36],[3,0.5,38],[3.5,0.5,38],[4,0.5,36],[5,0.5,36],[6,0.5,36],[7,0.5,38],[7.5,0.5,38],[8,0.5,36],[9,0.5,36],[10,0.5,36],[11,0.5,38],[11.5,0.5,38],[12,0.5,36],[13,0.5,36],[14,0.5,36],[15,0.5,38],[15.5,0.5,38],[16,0.5,36],[17,0.5,36],[18,0.5,36],[19,0.5,38],[19.5,0.5,38],[20,0.5,36],[21,0.5,36],[22,0.5,36],[23,0.5,38],[23.5,0.5,38],[24,0.5,36],[25,0.5,36],[26,0.5,36],[27,0.5,38],[27.5,0.5,38],[28,0.5,36],[29,0.5,36],[30,0.5,36],[31,0.5,38],[31.5,0.5,38]]) }
+  ]
+},
+{
+  id: "ambush", bar: 4, form: [{}, {bassX:2}, {}, {bassX:2}], title: "Ambush from Ten Sides", composer: "Traditional (China)", bpm: 126, diffHint: "Hard",
+  tracks: [
+    { name: "Pipa", inst: "pluck", notes: N([[0,0.5,57],[0.5,0.5,57],[1,0.5,57],[1.5,0.5,57],[2,0.5,57],[2.5,0.5,57],[3,1,57],[4,0.5,57],[4.5,0.5,60],[5,0.5,62],[5.5,0.5,64],[6,0.5,67],[6.5,0.5,69],[7,1,69],[8,0.5,69],[8.5,0.5,72],[9,0.5,69],[9.5,0.5,67],[10,0.5,69],[10.5,0.5,64],[11,0.5,67],[11.5,0.5,64],[12,0.5,62],[12.5,0.5,64],[13,0.5,67],[13.5,0.5,69],[14,0.5,72],[14.5,0.5,74],[15,1,72],[16,0.5,74],[16.5,0.5,72],[17,0.5,69],[17.5,0.5,72],[18,0.5,74],[18.5,0.5,76],[19,1,74],[20,0.5,72],[20.5,0.5,69],[21,0.5,67],[21.5,0.5,69],[22,1,72],[23,0.5,74],[23.5,0.5,74],[24,0.5,74],[24.5,0.5,72],[25,0.5,69],[25.5,0.5,72],[26,0.5,74],[26.5,0.5,76],[27,1,79],[28,0.5,76],[28.5,0.5,74],[29,0.5,72],[29.5,0.5,69],[30,0.5,67],[30.5,0.5,64],[31,1,57],[32,1,57],[33.5,0.5,60],[34,1,62],[35.5,0.5,60],[36,1,57],[37,1,60],[38,2,57],[40,0.5,69],[40.5,0.5,72],[41,0.5,74],[41.5,0.5,76],[42,0.5,79],[42.5,0.5,76],[43,0.5,74],[43.5,0.5,72],[44,0.5,74],[44.5,0.5,76],[45,0.5,74],[45.5,0.5,72],[46,0.5,69],[46.5,0.5,67],[47,1,69]]) },
+    { name: "Bass", inst: "bass", notes: N([[0,2,45],[2,2,45],[4,2,40],[6,2,45],[8,2,45],[10,2,43],[12,2,40],[14,2,45],[16,2,45],[18,2,43],[20,2,40],[22,2,45],[24,2,45],[26,2,43],[28,2,40],[30,2,45],[32,2,45],[34,2,40],[36,2,45],[38,2,40],[40,2,45],[42,2,43],[44,2,40],[46,2,45]]) },
+    { name: "War drums", inst: "drums", notes: N([[0,0.5,36],[0.5,0.5,36],[2,0.5,36],[3,0.5,38],[4,0.5,36],[4.5,0.5,36],[6,0.5,36],[7,0.5,38],[8,0.5,36],[8.5,0.5,36],[10,0.5,36],[11,0.5,38],[12,0.5,36],[12.5,0.5,36],[14,0.5,36],[15,0.5,38],[16,0.5,36],[16.5,0.5,36],[18,0.5,36],[19,0.5,38],[20,0.5,36],[20.5,0.5,36],[22,0.5,36],[23,0.5,38],[24,0.5,36],[24.5,0.5,36],[26,0.5,36],[27,0.5,38],[28,0.5,36],[28.5,0.5,36],[30,0.5,36],[31,0.5,38],[32,0.5,36],[32.5,0.5,36],[34,0.5,36],[35,0.5,38],[36,0.5,36],[36.5,0.5,36],[38,0.5,36],[39,0.5,38],[40,0.5,36],[40.5,0.5,36],[42,0.5,36],[43,0.5,38],[44,0.5,36],[44.5,0.5,36],[46,0.5,36],[47,0.5,38]]) }
+  ]
+}
+];
+
+function expandBundled(raw) {
+  const spb = 60 / raw.bpm;
+  const form = raw.form || [{}];
+  const bar = raw.bar || 4;
+  let maxEnd = 0;
+  for (const tr of raw.tracks) for (const [b, db] of tr.notes) maxEnd = Math.max(maxEnd, b + db);
+  const passBeats = Math.ceil(maxEnd / bar) * bar;
+  // track 0 is the melody by construction in BUNDLED_RAW; passes transform it
+  const tracks = raw.tracks.map((tr, ti) => {
+    const isMel = ti === 0;
+    const cells = [];
+    form.forEach((pass, pi) => {
+      const off = pi * passBeats;
+      const oct = isMel ? (pass.oct || 0) : 0;
+      for (const [b, db, pch] of tr.notes) {
+        if (!isMel && pass.bassX === 2 && db >= 1.5) {
+          // active bass: long roots become root + fifth movement
+          cells.push([off + b, db / 2, pch]);
+          cells.push([off + b + db / 2, db / 2, pch + 7]);
+        } else cells.push([off + b, db, pch + oct]);
+      }
+    });
+    return { name: tr.name, inst: tr.inst, isDrum: tr.inst === "drums", prog: 0,
+      notes: cells.map(([b, db, pch]) => ({ t: b * spb, d: Math.max(0.05, db * spb), p: pch, v: 96 }))
+        .sort((a, b) => a.t - b.t || a.p - b.p) };
+  });
+  let dur = 0;
+  for (const tr of tracks) for (const n of tr.notes) dur = Math.max(dur, n.t + n.d);
+  return { id: raw.id, title: raw.title, composer: raw.composer, source: "bundled",
+           bpm: raw.bpm, diffHint: raw.diffHint, tracks, duration: dur,
+           passes: form.length, passSec: passBeats * spb };
+}
+
+const BUNDLED = BUNDLED_RAW.map(expandBundled);
+
+return {
+  LANES, WIN_PERFECT, WIN_GOOD, DIFFS,
+  parseMIDI, parseForgeJSON, hashStr,
+  classifyTracks, buildChart,
+  newRun, gradeTap, tickMisses, finishRun, makeResults, truncateChart,
+  laneRelease, tickHolds, findCrescendos, CRESC_BONUS, bestAlignment, HOLD_BONUS,
+  fortReqFor, fortDurFor, fortActivate, fortActiveAt, FORT_MULT, comboMultAt,
+  eventForDate, makeShareCode, parseShareCode, EVT_EPOCH, EVT_WEEK,
+  detectOnsets, estimateBPM, audioSongFromOnsets, fftRadix2, importAdvisory, detectPercussion, detectBooms,
+  sustainEnvelope, sustainAt, SUSTAIN_DECAY,
+  BUNDLED
+};
+})();
+/* CORE-END */
+
+/* =====================================================================
+   THEME — the skin layer. A reskin (Yu-Gi-Oh, FE, Digimon, ...) swaps
+   this object + CSS variables; the engine reads only THEME.
+   ===================================================================== */
+const THEME = {
+  name: "Cadence",
+  laneColors: ["#f5c34d", "#f2705b", "#3fc9b0", "#a78bfa", "#5aa7f2", "#f2a65a", "#7fd06b", "#e06bf2"],
+  laneGlow:   ["#f5c34d66", "#f2705b66", "#3fc9b066", "#a78bfa66", "#5aa7f266", "#f2a65a66", "#7fd06b66", "#e06bf266"],
+  noteShape: "capsule",           // capsule | gem | card (future skins)
+  hitLineLabel: "",
+  judge: { perfect: "PERFECT", good: "GOOD", miss: "MISS" },
+  judgeColor: { perfect: "#f5c34d", good: "#3fc9b0", miss: "#f2705b" }
+};
+
+/* =====================================================================
+   STORAGE — window.storage in artifacts, localStorage on Pages,
+   in-memory last resort. Single versioned save object.
+   ===================================================================== */
+const Store = (() => {
+  let mem = {};
+  const KEY = "cadence-save-v1";
+  const hasWS = typeof window !== "undefined" && window.storage &&
+                typeof window.storage.get === "function";
+  async function load() {
+    // Try every layer in order — window.storage existing does NOT mean it works
+    // (some viewers expose the API but every call fails).
+    if (hasWS) {
+      try {
+        const r = await window.storage.get(KEY);
+        if (r && r.value) return JSON.parse(r.value);
+      } catch (e) {}
+    }
+    try { const s = localStorage.getItem(KEY); if (s) return JSON.parse(s); } catch (e) {}
+    return mem[KEY] || null;
+  }
+  async function save(obj) {
+    const s = JSON.stringify(obj);
+    mem[KEY] = obj;
+    // belt and braces: write BOTH layers, so a broken window.storage
+    // backend can never silently cost the player their save
+    if (hasWS) { try { await window.storage.set(KEY, s); } catch (e) {} }
+    try { localStorage.setItem(KEY, s); } catch (e) {}
+  }
+  return { load, save };
+})();
+
+let SAVE = { version: 1, offset: 0, calibrated: false, speed: 1.8, tapSfx: true,
+             best: {}, imports: [], heroes: { plays: 0, grades: {} },
+             pid: "", evtName: "", evtBest: {}, friends: {}, lanes: 4, audioPair: {}, fortMode: "auto" };
+
+/* =====================================================================
+   AUDIO — raw Web Audio, gesture-gated. Compact voice set consistent
+   with the Forge engine's approach (osc + envelope, Karplus-Strong).
+   ===================================================================== */
+const Audio2 = (() => {
+  let ctx = null, master = null;
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+  function envGain(t0, a, d, s, relAt, r, peak) {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + a);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * s), t0 + a + d);
+    g.gain.setValueAtTime(Math.max(0.0002, peak * s), relAt);
+    g.gain.exponentialRampToValueAtTime(0.0001, relAt + r);
+    return g;
+  }
+  function osc(type, freq, t0, t1, detune) {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
+    if (detune) o.detune.value = detune;
+    o.start(t0); o.stop(t1 + 0.05); return o;
+  }
+
+  // Karplus-Strong pluck rendered into a buffer
+  const ksCache = new Map();
+  function ksBuffer(freq, dur) {
+    const key = Math.round(freq) + ":" + Math.round(dur * 10);
+    if (ksCache.has(key)) return ksCache.get(key);
+    const sr = ctx.sampleRate, len = Math.floor(sr * Math.min(2.2, dur + 0.6));
+    const buf = ctx.createBuffer(1, len, sr), ch = buf.getChannelData(0);
+    const N = Math.max(2, Math.round(sr / freq));
+    const ring = new Float32Array(N);
+    for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+    let idx = 0;
+    for (let i = 0; i < len; i++) {
+      const cur = ring[idx], nxt = ring[(idx + 1) % N];
+      const out = 0.996 * 0.5 * (cur + nxt);
+      ch[i] = cur; ring[idx] = out; idx = (idx + 1) % N;
+    }
+    if (ksCache.size > 80) ksCache.clear();
+    ksCache.set(key, buf); return buf;
+  }
+
+  function play(inst, pitch, t0, dur, vel) {
+    ensure();
+    const v = (vel || 96) / 127;
+    const f = mtof(pitch);
+    const t1 = t0 + dur;
+    const out = [];
+    if (inst === "pluck") {
+      const src = ctx.createBufferSource(); src.buffer = ksBuffer(f, dur);
+      const g = ctx.createGain(); g.gain.value = 0.55 * v;
+      src.connect(g); g.connect(master); src.start(t0); out.push(src);
+    } else if (inst === "bass") {
+      const g = envGain(t0, 0.005, 0.08, 0.5, t1, 0.09, 0.5 * v);
+      osc("triangle", f, t0, t1).connect(g);
+      osc("sine", f / 2, t0, t1).connect(g);
+      g.connect(master);
+    } else if (inst === "square") {
+      const g = envGain(t0, 0.004, 0.06, 0.55, t1, 0.07, 0.28 * v);
+      osc("square", f, t0, t1).connect(g);
+      g.connect(master);
+    } else if (inst === "saw") {
+      const g = envGain(t0, 0.01, 0.08, 0.5, t1, 0.08, 0.22 * v);
+      osc("sawtooth", f, t0, t1).connect(g);
+      osc("sawtooth", f, t0, t1, 8).connect(g);
+      g.connect(master);
+    } else if (inst === "bell") {
+      const g = envGain(t0, 0.002, Math.min(1.4, dur + 0.5), 0.08, t1, 0.35, 0.4 * v);
+      osc("sine", f, t0, t1 + 0.3).connect(g);
+      const g2 = envGain(t0, 0.002, 0.35, 0.05, t1, 0.2, 0.14 * v);
+      osc("sine", f * 2.76, t0, t1 + 0.2).connect(g2);
+      g.connect(master); g2.connect(master);
+    } else if (inst === "organ") {
+      const g = envGain(t0, 0.04, 0.05, 0.85, t1, 0.1, 0.2 * v);
+      osc("sine", f, t0, t1).connect(g);
+      osc("sine", f * 2, t0, t1).connect(g);
+      osc("sine", f * 3, t0, t1, 3).connect(g);
+      g.connect(master);
+    } else if (inst === "drums") {
+      playDrum(pitch, t0, v);
+    } else { // piano-ish default
+      const g = envGain(t0, 0.003, Math.min(0.9, dur * 0.9 + 0.15), 0.25, t1, 0.14, 0.42 * v);
+      osc("triangle", f, t0, t1).connect(g);
+      const g2 = envGain(t0, 0.002, 0.10, 0.12, t1, 0.10, 0.16 * v);
+      osc("sine", f * 2, t0, t1, 4).connect(g2);
+      g.connect(master); g2.connect(master);
+    }
+    return out;
+  }
+
+  function playDrum(pitch, t0, v) {
+    if (pitch === 35 || pitch === 36) { // kick
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.setValueAtTime(150, t0);
+      o.frequency.exponentialRampToValueAtTime(45, t0 + 0.12);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.8 * v, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+      o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 0.25);
+    } else { // snare/clap/hat: filtered noise
+      const dur = (pitch === 38 || pitch === 40) ? 0.16 : pitch === 39 ? 0.11 : 0.06;
+      const len = Math.floor(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate), ch = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const flt = ctx.createBiquadFilter();
+      flt.type = "highpass"; flt.frequency.value = (pitch === 38 || pitch === 40) ? 1600 : pitch === 39 ? 2400 : 6500;
+      const g = ctx.createGain(); g.gain.value = ((pitch === 38 || pitch === 40 || pitch === 39) ? 0.5 : 0.3) * v;
+      src.connect(flt); flt.connect(g); g.connect(master); src.start(t0);
+    }
+  }
+
+  function tapSfx() {
+    if (!SAVE.tapSfx) return;
+    ensure();
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 1200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.12, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.05);
+    o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 0.06);
+  }
+
+  function tick(t0, accent) {
+    ensure();
+    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = accent ? 1500 : 1000;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.001, t0);
+    g.gain.linearRampToValueAtTime(0.4, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+    o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 0.1);
+    return o;
+  }
+
+  // GM program -> internal voice
+  function voiceFor(track) {
+    if (track.isDrum) return "drums";
+    if (track.inst) return track.inst;
+    const pr = track.prog || 0;
+    if (pr >= 24 && pr <= 31) return "pluck";
+    if (pr >= 32 && pr <= 39) return "bass";
+    if (pr >= 80 && pr <= 87) return "square";
+    return "piano";
+  }
+
+  return { ensure, play, tapSfx, tick, voiceFor,
+           now: () => (ctx ? ctx.currentTime : 0),
+           get ctx() { return ctx; }, get masterNode() { return master; } };
+})();
+
+/* =====================================================================
+   AUDIO PAIRING STORE — real recordings live in IndexedDB (big, durable);
+   if IDB is unavailable the blob survives this session only.
+   ===================================================================== */
+const AudioStore = (() => {
+  const mem = new Map();
+  let idbOk = null;
+  function openDB() {
+    return new Promise((res, rej) => {
+      try {
+        const req = indexedDB.open("cadence-audio", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("audio");
+        req.onerror = () => rej(req.error || new Error("open failed"));
+        req.onsuccess = () => res(req.result);
+      } catch (e) { rej(e); }
+    });
+  }
+  async function put(id, blob) {
+    mem.set(id, blob);
+    try {
+      const db = await openDB();
+      await new Promise((res, rej) => {
+        const tx = db.transaction("audio", "readwrite");
+        tx.objectStore("audio").put(blob, id);
+        tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+      });
+      db.close(); idbOk = true; return { durable: true };
+    } catch (e) { idbOk = false; return { durable: false }; }
+  }
+  async function get(id) {
+    if (mem.has(id)) return mem.get(id);
+    try {
+      const db = await openDB();
+      const blob = await new Promise((res, rej) => {
+        const tx = db.transaction("audio", "readonly");
+        const rq = tx.objectStore("audio").get(id);
+        rq.onsuccess = () => res(rq.result || null);
+        rq.onerror = () => rej(rq.error);
+      });
+      db.close();
+      if (blob) mem.set(id, blob);
+      return blob;
+    } catch (e) { return null; }
+  }
+  async function del(id) {
+    mem.delete(id);
+    try {
+      const db = await openDB();
+      await new Promise((res) => {
+        const tx = db.transaction("audio", "readwrite");
+        tx.objectStore("audio").delete(id);
+        tx.oncomplete = res; tx.onerror = res;
+      });
+      db.close();
+    } catch (e) {}
+  }
+  return { put, get, del, get idbOk() { return idbOk; } };
+})();
+const decodedCache = new Map(); // songId -> AudioBuffer (per session)
+/* A decoded 7-minute stereo track is ~140MB of PCM. Importing a batch would
+   otherwise pin one buffer per song for the whole session, so the cache keeps
+   only the most recently USED few -- reads bump as well as writes, so the song
+   you keep replaying survives while a stale first import gets dropped.
+   Anything evicted is re-decoded from IndexedDB on demand: costs a moment,
+   loses nothing. Every path in and out of this cache goes through
+   cacheDecoded so no site can reintroduce an unbounded set. */
+const DECODED_MAX = 2;
+function cacheDecoded(id, buf) {
+  decodedCache.delete(id);
+  decodedCache.set(id, buf);
+  while (decodedCache.size > DECODED_MAX) {
+    const oldest = decodedCache.keys().next().value;
+    if (oldest === id) break;
+    decodedCache.delete(oldest);
+  }
+}
+
+/* =====================================================================
+   NAVIGATION + SHARED UI
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+function show(id) {
+  // leaving the library always drops select mode, so it can never persist
+  // into a later visit and turn an ordinary tap into a selection
+  if (id !== "scr-songs" && typeof LIB !== "undefined" && LIB.selecting) exitSelect();
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+document.querySelectorAll("[data-nav]").forEach(el =>
+  el.addEventListener("click", () => { stopCalib(); show(el.dataset.nav);
+    if (el.dataset.nav === "scr-settings") renderSettings();
+    if (el.dataset.nav === "scr-title") updateEventCard(); }));
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+// any tap anywhere dismisses the toast (pointerdown fires before click,
+// so the tap that triggers a toast never dismisses its own message)
+document.addEventListener("pointerdown", () => $("toast").classList.remove("show"), true);
+
+/* Title staff animation: quiet dotted waveform */
+(function drawStaff() {
+  const svg = $("staff");
+  let dots = "";
+  for (let i = 0; i < 24; i++) {
+    const x = 8 + i * 14;
+    const y = 28 + Math.sin(i * 0.9) * 16;
+    const c = THEME.laneColors[i % 4];
+    dots += `<circle cx="${x}" cy="${y}" r="3.4" fill="${c}" opacity="${0.35 + 0.5 * Math.abs(Math.sin(i))}"/>`;
+  }
+  svg.innerHTML = `<line x1="0" y1="28" x2="340" y2="28" stroke="#2e3670" stroke-width="1"/>` + dots;
+})();
+
+/* =====================================================================
+   SONG LIBRARY
+   ===================================================================== */
+function allSongs() {
+  const imported = SAVE.imports.map(s => s);
+  return CORE.BUNDLED.concat(imported);
+}
+function bestKey(songId, diff, lanes) {
+  return songId + "::" + diff + ((lanes || 4) !== 4 ? "::L" + lanes : "");
+}
+function activeLanes() { return (SAVE.lanes === 6 || SAVE.lanes === 8) ? SAVE.lanes : 4; }
+
+const LIB = { filter: "all", page: 0, PAGE: 6, selecting: false, sel: new Set(), confirming: false };
+function filteredSongs() {
+  const all = allSongs();
+  return LIB.filter === "all" ? all : all.filter(s => s.source === LIB.filter);
+}
+/* Removes imports completely: library entry, stored recording, pairing record,
+   decoded buffer and saved bests. One helper so no path can forget a piece and
+   leave an orphaned blob in IndexedDB or a score for a song that's gone. */
+async function removeImports(ids) {
+  const set = new Set(ids);
+  if (!set.size) return 0;
+  for (const id of set) {
+    if (SAVE.audioPair[id]) { await AudioStore.del(id); delete SAVE.audioPair[id]; }
+    decodedCache.delete(id);
+    for (const k of Object.keys(SAVE.best)) if (k.startsWith(id + "::")) delete SAVE.best[k];
+  }
+  const before = SAVE.imports.length;
+  SAVE.imports = SAVE.imports.filter(s => !set.has(s.id));
+  chartCache.clear();
+  await Store.save(SAVE);
+  return before - SAVE.imports.length;
+}
+function exitSelect() {
+  LIB.selecting = false; LIB.sel.clear(); LIB.confirming = false;
+  $("lib-select").textContent = "Select";
+  $("lib-remove").style.display = "none";
+  $("lib-selinfo").textContent = "";
+}
+function renderSelectBar() {
+  const n = LIB.sel.size;
+  $("lib-remove").style.display = LIB.selecting ? "" : "none";
+  $("lib-remove").disabled = n === 0;
+  $("lib-remove").textContent = LIB.confirming ? "Tap to confirm" : (n ? "Remove " + n : "Remove");
+  $("lib-selinfo").textContent = LIB.selecting
+    ? (n ? n + " selected" : "Tap imported songs to select") : "";
+}
+function renderSongs() {
+  const list = $("songlist"); list.innerHTML = "";
+  const songs = filteredSongs();
+  const pages = Math.max(1, Math.ceil(songs.length / LIB.PAGE));
+  LIB.page = Math.min(LIB.page, pages - 1);
+  if (!songs.length) {
+    const msg = LIB.filter === "midi" ? "No MIDI imports yet — add one from Import Songs on the title screen."
+      : LIB.filter === "audio" ? "No audio imports yet — pick an MP3 in Import Songs and Cadence will chart it by ear."
+      : LIB.filter === "forge" ? "No Forge Sequencer songs yet — export one from Forge Sequencer as JSON and import it."
+      : "Library is empty.";
+    list.innerHTML = '<div class="note-dim" style="padding:22px 6px">' + msg + "</div>";
+  }
+  renderSelectBar();
+  $("pg-info").textContent = "Page " + (LIB.page + 1) + " / " + pages + " · " + songs.length + " song" + (songs.length === 1 ? "" : "s");
+  $("pg-prev").disabled = LIB.page === 0;
+  $("pg-next").disabled = LIB.page >= pages - 1;
+  for (const s of songs.slice(LIB.page * LIB.PAGE, (LIB.page + 1) * LIB.PAGE)) {
+    const row = document.createElement("div"); row.className = "songrow";
+    const g = (d) => {
+      const b = SAVE.best[bestKey(s.id, d, activeLanes())];
+      return b ? `<span style="color:var(--gold);font-weight:700">${b.grade}</span>` : `<span style="color:#565d85">–</span>`;
+    };
+    const badge = s.source === "bundled"
+      ? `<span class="badge">${s.diffHint || "Song"}</span>`
+      : `<span class="badge import">${s.source === "forge" ? "Forge" : s.source === "audio" ? "Audio" : "MIDI"}</span>`;
+    const mins = Math.floor(s.duration / 60), secs = Math.round(s.duration % 60);
+    const isImport = s.source !== "bundled";
+    const picked = LIB.sel.has(s.id);
+    if (LIB.selecting) {
+      if (!isImport) row.classList.add("locked");
+      else if (picked) row.classList.add("picked");
+    }
+    row.innerHTML =
+      (LIB.selecting ? `<div class="tick">${picked ? "✓" : ""}</div>` : "") +
+      `<div class="meta"><div class="t">${esc(s.title)}</div>
+      <div class="c">${badge}${esc(s.composer)} · ${mins ? mins + "m" + String(secs).padStart(2, "0") + "s" : secs + "s"}</div></div>
+      <div class="best" style="line-height:1.5">E ${g("easy")}<br>N ${g("normal")}<br>H ${g("hard")}</div>`;
+    row.addEventListener("click", () => {
+      if (!LIB.selecting) { openDiffSheet(s); return; }
+      if (!isImport) { toast("Bundled songs are part of Cadence and can't be removed."); return; }
+      if (LIB.sel.has(s.id)) LIB.sel.delete(s.id); else LIB.sel.add(s.id);
+      LIB.confirming = false;
+      renderSongs();
+    });
+    list.appendChild(row);
+  }
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+
+let pendingSong = null;
+const chartCache = new Map();
+function chartFor(song, diff, lanes) {
+  const L = lanes || 4;
+  const k = song.id + "::" + diff + "::" + L;
+  if (!chartCache.has(k)) chartCache.set(k, CORE.buildChart(song, diff, L));
+  return chartCache.get(k);
+}
+function fmtTime(s) { const m = Math.floor(s / 60); return m + ":" + String(Math.round(s % 60)).padStart(2, "0"); }
+function sheetLen() { // current slider choice in seconds, or null for full
+  const sl = $("lenslider");
+  if (sl.disabled || !pendingSong) return null;
+  const v = +sl.value;
+  return v >= pendingSong.duration - 1 ? null : v;
+}
+function updateSheetCounts() {
+  const len = sheetLen();
+  $("lenlabel").textContent = len == null ? "Full · " + fmtTime(pendingSong.duration) : "First " + fmtTime(len);
+  for (const [id, diff] of [["ds-e","easy"],["ds-n","normal"],["ds-h","hard"]]) {
+    const chart = CORE.truncateChart(chartFor(pendingSong, diff, activeLanes()), len);
+    const b = SAVE.best[bestKey(pendingSong.id, diff, activeLanes())];
+    $(id).textContent = chart.length + " notes" +
+      (b ? " · Best " + b.grade + " " + b.score.toLocaleString() : "");
+  }
+}
+function openDiffSheet(song) {
+  pendingSong = song;
+  $("ds-title").textContent = song.title;
+  $("ds-sub").textContent = song.composer + " · " + song.bpm + " BPM";
+  const sl = $("lenslider");
+  const long = song.duration > 45;
+  $("lenrow").style.display = long ? "" : "none";
+  sl.disabled = !long;
+  if (long) {
+    sl.min = 30;
+    // max must land on a legal step (min + k·step) at or past the duration,
+    // otherwise the thumb can never reach Full
+    sl.max = 30 + Math.ceil((song.duration - 30) / 15) * 15;
+    sl.step = 15; sl.value = sl.max;
+  }
+  updateSheetCounts();
+  renderPairRow();
+  $("diffsheet").classList.add("open");
+}
+function renderPairRow() {
+  const meta = SAVE.audioPair[pendingSong.id];
+  const isAudioSong = pendingSong.source === "audio";
+  $("pair-status").textContent = meta
+    ? "Audio: " + meta.name + (meta.durable === false ? " (this session only)" : "")
+    : (isAudioSong ? "Audio: recording missing — re-pick it" : "Audio: synth");
+  $("pair-btn").textContent = meta ? "Replace" : (isAudioSong ? "Pick recording" : "Pair audio");
+  $("pair-del").style.display = (meta && !isAudioSong) ? "" : "none";
+}
+$("pair-btn").addEventListener("click", () => $("pair-file").click());
+$("pair-del").addEventListener("click", async () => {
+  await AudioStore.del(pendingSong.id);
+  decodedCache.delete(pendingSong.id);
+  delete SAVE.audioPair[pendingSong.id];
+  await Store.save(SAVE);
+  renderPairRow(); toast("Back to synth playback for this song.");
+});
+$("pair-file").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f || !pendingSong) return;
+  if (f.size > 25 * 1024 * 1024)
+    toast("That file is " + Math.round(f.size / 1048576) + "MB — an MP3/M4A version would pair much better.");
+  const r = await AudioStore.put(pendingSong.id, f);
+  decodedCache.delete(pendingSong.id);
+  let offset = 0, syncNote = "";
+  if (pendingSong.source !== "audio") {
+    // auto-sync: hear the recording, align it to the chart, set the offset
+    try {
+      toast("Pairing — listening to the recording to auto-sync…");
+      Audio2.ensure();
+      const buf = await Audio2.ctx.decodeAudioData(await f.arrayBuffer());
+      const len = buf.length, chs = buf.numberOfChannels;
+      const monoP = new Float32Array(len);
+      for (let c = 0; c < chs; c++) { const ch = buf.getChannelData(c); for (let i = 0; i < len; i++) monoP[i] += ch[i] / chs; }
+      cacheDecoded(pendingSong.id, buf);
+      const onsets = CORE.detectOnsets(monoP, buf.sampleRate);
+      const chartT = chartFor(pendingSong, "normal", 4).map(n => n.t);
+      const al = CORE.bestAlignment(chartT, onsets.map(o => o.t));
+      if (al.frac >= 0.3) { offset = al.offsetMs; syncNote = " Auto-synced (" + (offset >= 0 ? "+" : "") + offset + "ms, " + Math.round(al.frac * 100) + "% of notes matched)."; }
+      else syncNote = " Couldn't auto-sync confidently (" + Math.round(al.frac * 100) + "% matched) — the recording may not follow this MIDI's structure; sync tools are in the pause menu.";
+    } catch (e) { syncNote = ""; }
+  }
+  SAVE.audioPair[pendingSong.id] = { name: f.name, size: f.size, offset, durable: r.durable };
+  await Store.save(SAVE);
+  renderPairRow();
+  toast((r.durable ? "Paired — the recording plays instead of the synth."
+                   : "Paired for this session — this viewer can't keep audio files, so re-pick it next time.") + syncNote);
+});
+$("lenslider").addEventListener("input", updateSheetCounts);
+$("ds-cancel").addEventListener("click", () => $("diffsheet").classList.remove("open"));
+document.querySelectorAll(".diffbtn").forEach(b =>
+  b.addEventListener("click", () => {
+    $("diffsheet").classList.remove("open");
+    startPlay(pendingSong, b.dataset.diff, sheetLen());
+  }));
+
+document.querySelectorAll("#seg-lib .seg").forEach(s =>
+  s.addEventListener("click", () => {
+    LIB.filter = s.dataset.v; LIB.page = 0;
+    syncSeg("seg-lib", s.dataset.v);
+    renderSongs();
+  }));
+$("pg-prev").addEventListener("click", () => { if (LIB.page > 0) { LIB.page--; renderSongs(); } });
+$("pg-next").addEventListener("click", () => { LIB.page++; renderSongs(); });
+
+/* =====================================================================
+   GAMEPLAY
+   ===================================================================== */
+const G = {
+  song: null, diff: null, run: null,
+  startAt: 0,          // audio-clock time of song beat 0
+  schedIdx: [],        // per-track scheduling index
+  schedTimer: null,
+  playing: false, paused: false, pausedAt: 0, playLen: null, effDur: 0, eventIdx: null, lanes: 4, noteClicks: false, clickIdx: 0,
+  raf: 0, endAt: 0
+};
+const LEAD_IN = 2.0;   // silence before the first note
+const TAIL = 1.2;
+
+const canvas = $("gamecanvas");
+const cx = canvas.getContext("2d");
+let CW = 0, CH = 0, DPR = 1;
+function sizeCanvas() {
+  DPR = Math.min(3, window.devicePixelRatio || 1);
+  const r = canvas.parentElement.getBoundingClientRect();
+  CW = Math.max(1, Math.floor(r.width)); CH = Math.max(1, Math.floor(r.height));
+  canvas.width = CW * DPR; canvas.height = CH * DPR;
+  canvas.style.width = CW + "px"; canvas.style.height = CH + "px";
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener("resize", () => { if (G.playing) sizeCanvas(); });
+
+function buildPads(n) {
+  const pads = $("pads"); pads.innerHTML = "";
+  for (let l = 0; l < n; l++) {
+    const b = document.createElement("button");
+    b.className = "pad"; b.dataset.lane = l;
+    b.style.background = "linear-gradient(180deg, " + THEME.laneColors[l] + "33, " + THEME.laneColors[l] + "14)";
+    b.style.boxShadow = "inset 0 0 0 2px " + THEME.laneColors[l];
+    pads.appendChild(b);
+  }
+}
+async function preparePairedAudio(song) {
+  const meta = SAVE.audioPair[song.id];
+  if (!meta) return null;
+  if (decodedCache.has(song.id)) {
+    const hit = decodedCache.get(song.id);
+    cacheDecoded(song.id, hit);   // true LRU: a cache hit refreshes its place
+    return hit;
+  }
+  const blob = await AudioStore.get(song.id);
+  if (!blob) {
+    toast("Paired audio for this song isn't on this device anymore — playing synth. Re-pair from the song sheet.");
+    return null;
+  }
+  try {
+    toast("Loading audio…");
+    const buf = await Audio2.ctx.decodeAudioData(await blob.arrayBuffer());
+    cacheDecoded(song.id, buf);
+    return buf;
+  } catch (e) {
+    toast("Couldn't decode that audio file (" + (e && e.message || "format") + ") — playing synth.");
+    return null;
+  }
+}
+async function startPlay(song, diff, playLen, eventIdx) {
+  Audio2.ensure();
+  G.song = song; G.diff = diff;
+  G.eventIdx = (eventIdx != null) ? eventIdx : null;
+  // events always run 4 lanes (identical chart for everyone);
+  // wide-lane play needs a screen that can actually fit it
+  let lanes = (G.eventIdx != null) ? 4 : activeLanes();
+  if (lanes > 4 && window.innerWidth < 700) {
+    lanes = 4;
+    toast("This screen is too narrow for " + activeLanes() + " lanes — playing 4.");
+  }
+  G.lanes = lanes;
+  buildPads(lanes);
+  G.playLen = (playLen != null && playLen < song.duration - 1) ? playLen : null;
+  G.effDur = G.playLen ?? song.duration;
+  const fullChart = chartFor(song, diff, lanes);
+  const played = CORE.truncateChart(fullChart, G.playLen);
+  G.zones = CORE.findCrescendos(played, G.effDur);
+  G.run = CORE.newRun(played, song, diff, G.zones, {
+    mode: (G.eventIdx != null) ? "auto" : (SAVE.fortMode === "manual" ? "manual" : "auto"),
+    dur: CORE.fortDurFor(G.effDur)
+  });
+  G.schedIdx = song.tracks.map(() => 0);
+  G.playing = true; G.paused = false;
+  show("scr-play");
+  $("scr-play").classList.add("ingame");
+  $("hud-song").textContent = song.title + " · " + diff[0].toUpperCase() + diff.slice(1)
+    + (G.lanes !== 4 ? " · " + G.lanes + "L" : "")
+    + (G.playLen ? " · " + fmtTime(G.playLen) : "");
+  $("hud-combo").textContent = "0"; $("hud-score").textContent = "0";
+  $("progressfill").style.width = "0%";
+  sizeCanvas();
+  activePtr.clear();
+  G.noteClicks = false; G.clickIdx = 0;
+  if (song.source === "audio" && SAVE.audioPair[song.id] && SAVE.audioPair[song.id].offset) {
+    SAVE.audioPair[song.id].offset = 0; Store.save(SAVE);
+  }
+  G.clickTimes = CORE.truncateChart(chartFor(song, "easy", (eventIdx != null) ? 4 : activeLanes()),
+    (playLen != null && playLen < song.duration - 1) ? playLen : null).map(n => n.t);
+  G.audioBuf = await preparePairedAudio(song);
+  G.audioMode = !!G.audioBuf;
+  if (song.source === "audio" && !G.audioMode) {
+    stopPlay(); show("scr-songs"); renderSongs();
+    toast("This chart was built from a recording — pick the audio file again from its song sheet to play it.");
+    return;
+  }
+  if (!G.playing) return; // quit while loading
+  const now = Audio2.now();
+  G.startAt = now + LEAD_IN;
+  G.endAt = G.startAt + G.effDur + TAIL;
+  if (G.audioMode) startPairedAudio(0);
+  runScheduler();
+  G.schedTimer = setInterval(runScheduler, 25);
+  countdownLoop();
+  cancelAnimationFrame(G.raf);
+  frame();
+}
+
+function songTime() { return Audio2.now() - G.startAt; }
+
+function countdownLoop() {
+  const el = $("countdown");
+  const step = () => {
+    if (!G.playing) { el.textContent = ""; return; }
+    const t = songTime();
+    if (t >= -0.05) { el.textContent = ""; return; }
+    el.textContent = Math.ceil(-t);
+    requestAnimationFrame(step);
+  };
+  step();
+}
+
+let liveSources = [];
+let pairedSrc = null;
+function pairOffset() {
+  if (G.song && G.song.source === "audio") return 0; // aligned by construction
+  return (SAVE.audioPair[G.song.id]?.offset || 0) / 1000;
+}
+function startPairedAudio(chartT) {
+  stopPairedAudio();
+  const o = pairOffset();
+  const bufPos = chartT + o;
+  const src = Audio2.ctx.createBufferSource();
+  src.buffer = G.audioBuf;
+  const g = Audio2.ctx.createGain(); g.gain.value = 0.9;
+  src.connect(g); g.connect(Audio2.masterNode);
+  const when = G.startAt + chartT + Math.max(0, -bufPos);
+  src.start(Math.max(Audio2.now(), when), Math.max(0, bufPos));
+  try { src.stop(G.startAt + G.effDur + TAIL); } catch (e) {}
+  pairedSrc = src;
+}
+function stopPairedAudio() {
+  if (pairedSrc) { try { pairedSrc.stop(); } catch (e) {} pairedSrc = null; }
+}
+function runScheduler() {
+  if (!G.playing || G.paused) return;
+  if (G.audioMode) {
+    // recording plays; synth stays silent — but the sync-check clicks
+    // fire exactly at chart-note times when enabled
+    if (!G.noteClicks || !G.clickTimes) return;
+    const ahead = Audio2.now() + 0.14;
+    while (G.clickIdx < G.clickTimes.length && G.startAt + G.clickTimes[G.clickIdx] < ahead) {
+      const ct = G.clickTimes[G.clickIdx];
+      if (G.startAt + ct > Audio2.now()) Audio2.tick(G.startAt + ct, false);
+      G.clickIdx++;
+    }
+    return;
+  }
+  const ahead = Audio2.now() + 0.14;
+  G.song.tracks.forEach((tr, ti) => {
+    const voice = Audio2.voiceFor(tr);
+    let i = G.schedIdx[ti];
+    while (i < tr.notes.length && G.startAt + tr.notes[i].t < ahead) {
+      const n = tr.notes[i];
+      if (G.playLen != null && n.t > G.playLen) { i++; continue; }
+      const srcs = Audio2.play(voice, n.p, G.startAt + n.t, n.d, n.v);
+      if (srcs && srcs.length) {
+        liveSources.push(...srcs);
+        if (liveSources.length > 40) liveSources.splice(0, liveSources.length - 40);
+      }
+      i++;
+    }
+    G.schedIdx[ti] = i;
+  });
+}
+
+/* input */
+function laneTap(lane) {
+  if (!G.playing || G.paused) return;
+  Audio2.tapSfx();
+  flashPad(lane);
+  const t = songTime() - SAVE.offset;
+  const g = CORE.gradeTap(G.run, lane, t);
+  if (g) judge(g);
+}
+const activePtr = new Map(); // pointerId -> lane, for hold releases
+$("pads").addEventListener("pointerdown", (e) => {
+  const p = e.target.closest(".pad");
+  if (!p) return;
+  e.preventDefault();
+  activePtr.set(e.pointerId, +p.dataset.lane);
+  laneTap(+p.dataset.lane);
+});
+canvas.addEventListener("pointerdown", (e) => {
+  if (!G.playing || G.paused) return;
+  const r = canvas.getBoundingClientRect();
+  const lane = Math.max(0, Math.min(G.lanes - 1, Math.floor((e.clientX - r.left) / (CW / G.lanes))));
+  activePtr.set(e.pointerId, lane);
+  laneTap(lane);
+});
+function laneUp(lane) {
+  if (!G.playing || G.paused || !G.run) return;
+  CORE.laneRelease(G.run, lane, songTime() - SAVE.offset);
+  $("hud-score").textContent = G.run.score;
+}
+function laneStillHeld(lane) {
+  for (const l of activePtr.values()) if (l === lane) return true;
+  return false;
+}
+document.addEventListener("pointerup", (e) => {
+  const lane = activePtr.get(e.pointerId);
+  if (lane == null) return;
+  activePtr.delete(e.pointerId);
+  // another finger is still on this lane (common when a stale finger from the
+  // previous note lifts late) — that lift is not this hold's release
+  if (!laneStillHeld(lane)) laneUp(lane);
+});
+document.addEventListener("pointercancel", (e) => {
+  // the system took the pointer away — iOS does this when a second touch
+  // starts a possible gesture. That is not the player letting go, so the hold
+  // survives and completes at its tail rather than breaking.
+  activePtr.delete(e.pointerId);
+});
+// desktop keyboard: home-row mappings per lane count
+const KEYMAPS = {
+  4: ["KeyD","KeyF","KeyJ","KeyK"],
+  6: ["KeyS","KeyD","KeyF","KeyJ","KeyK","KeyL"],
+  8: ["KeyA","KeyS","KeyD","KeyF","KeyJ","KeyK","KeyL","Semicolon"]
+};
+function tryFortManual() {
+  if (!G.playing || G.paused || !G.run || G.run.fortMode !== "manual") return;
+  if (CORE.fortActivate(G.run, songTime() - SAVE.offset)) Audio2.tick(Audio2.now(), true);
+}
+$("fortwrap").addEventListener("pointerdown", (e) => { e.preventDefault(); tryFortManual(); });
+document.addEventListener("keydown", (e) => {
+  if (!G.playing || G.paused || e.repeat) return;
+  if (e.code === "KeyF") { e.preventDefault(); tryFortManual(); return; }
+  const lane = (KEYMAPS[G.lanes] || []).indexOf(e.code);
+  if (lane >= 0) { e.preventDefault(); laneTap(lane); }
+});
+document.addEventListener("keyup", (e) => {
+  const lane = (KEYMAPS[G.lanes] || []).indexOf(e.code);
+  if (lane >= 0 && !laneStillHeld(lane)) laneUp(lane);
+});
+// no page scrolling in any direction while a song is live
+const lockScroll = (e) => { if (G.playing && !G.paused) e.preventDefault(); };
+document.addEventListener("touchmove", lockScroll, { passive: false });
+document.addEventListener("wheel", lockScroll, { passive: false });
+const padFlash = new Array(8).fill(0);
+function flashPad(l) {
+  padFlash[l] = performance.now();
+  const p = $("pads").children[l];
+  if (p) { p.style.filter = "brightness(1.6)"; setTimeout(() => p.style.filter = "", 110); }
+}
+
+let judgeTimer = null;
+function judge(kind) {
+  const el = $("judgepop");
+  el.textContent = THEME.judge[kind];
+  el.style.color = THEME.judgeColor[kind];
+  el.style.opacity = "1";
+  clearTimeout(judgeTimer);
+  judgeTimer = setTimeout(() => el.style.opacity = "0", 260);
+  const cm = CORE.comboMultAt(G.run.combo, G.run.total);
+  $("hud-combo").textContent = G.run.combo + (cm > 1 ? " ×" + cm.toFixed(2) : "");
+  $("hud-score").textContent = G.run.score;
+}
+
+/* render loop */
+function frame() {
+  if (!G.playing) return;
+  G.raf = requestAnimationFrame(frame);
+  if (G.paused) return;
+  const t = songTime();
+  $("progressfill").style.width = Math.min(100, Math.max(0, t / G.effDur * 100)) + "%";
+  const fb = $("fortbar"), gt = t - SAVE.offset;
+  if (CORE.fortActiveAt(G.run, gt)) {
+    fb.className = "active";
+    fb.style.width = Math.max(0, ((G.run.fortUntil - gt) / G.run.fortDur) * 100) + "%";
+  } else {
+    const fill = Math.min(1, G.run.fortMeter / G.run.fortReq);
+    fb.className = fill >= 1 ? "full" : "";
+    fb.style.width = (fill * 100) + "%";
+  }
+  const missedBefore = G.run.miss;
+  CORE.tickMisses(G.run, t - SAVE.offset);
+  CORE.tickHolds(G.run, t - SAVE.offset);
+  if (G.run.miss > missedBefore) { judge("miss"); }
+  draw(t);
+  if (t > G.effDur + TAIL) endPlay();
+}
+
+function draw(t) {
+  cx.clearRect(0, 0, CW, CH);
+  const NL = G.lanes || 4;
+  const laneW = CW / NL;
+  const hitY = CH - 26;
+  const travel = SAVE.speed;
+
+  // lanes
+  for (let l = 0; l < NL; l++) {
+    const grd = cx.createLinearGradient(0, 0, 0, CH);
+    grd.addColorStop(0, "rgba(255,255,255,0.012)");
+    grd.addColorStop(1, THEME.laneGlow[l].slice(0, 7) + "14");
+    cx.fillStyle = grd;
+    cx.fillRect(l * laneW + 1, 0, laneW - 2, CH);
+    // pad flash
+    const dt = performance.now() - padFlash[l];
+    if (dt < 140) {
+      cx.fillStyle = THEME.laneGlow[l].slice(0, 7) + Math.floor((1 - dt / 140) * 60).toString(16).padStart(2, "0");
+      cx.fillRect(l * laneW, hitY - 60, laneW, 60 + 20);
+    }
+  }
+  // beat pulse on hit line (the cadence strip) — only when the beat grid is
+  // real. Audio imports have estimated bpm and unknown phase, so a pulsing
+  // line there is a false timing cue; they get a steady glow instead.
+  let pulse = 0;
+  if (G.song.source !== "audio") {
+    const spb = 60 / G.song.bpm;
+    const phase = ((t % spb) + spb) % spb / spb;
+    pulse = Math.max(0, 1 - phase * 3);
+  }
+  cx.fillStyle = "rgba(245,195,77," + (0.35 + pulse * 0.45) + ")";
+  cx.fillRect(0, hitY - 2, CW, 4);
+  cx.fillStyle = "rgba(245,195,77,0.12)";
+  cx.fillRect(0, hitY - 8, CW, 16);
+
+  // crescendo: wash + label when inside a zone, boundary shimmer when approaching
+  const zones = G.zones || [];
+  const inZone = zones.some(z => t >= z.start && t < z.end);
+  const fortOn = G.run && CORE.fortActiveAt(G.run, t - SAVE.offset);
+  if (inZone || fortOn) {
+    cx.fillStyle = fortOn && inZone ? "rgba(255,233,168,0.11)" : "rgba(245,195,77,0.07)";
+    cx.fillRect(0, 0, CW, CH);
+    cx.fillStyle = "rgba(245,195,77,0.95)";
+    cx.font = "700 13px -apple-system, sans-serif";
+    cx.textAlign = "center";
+    cx.fillText(fortOn && inZone ? "FORTISSIMO + CRESCENDO ×4"
+              : fortOn ? "FORTISSIMO ×2" : "CRESCENDO ×2", CW / 2, 22);
+  }
+  for (const z of zones) {
+    const dz = z.start - t;
+    if (dz > 0 && dz < travel) {
+      const zy = hitY - (dz / travel) * (hitY + 18);
+      cx.fillStyle = "rgba(245,195,77,0.5)";
+      cx.fillRect(0, zy, CW, 2);
+      cx.font = "700 11px -apple-system, sans-serif";
+      cx.textAlign = "left";
+      cx.fillText("CRESCENDO", 8, zy - 5);
+    }
+  }
+
+  // notes (taps + holds)
+  const noteH = 18, noteW = laneW * 0.68;
+  for (const n of G.run.notes) {
+    if (n.hit && !n.holding) continue;
+    const dt2 = n.t - t;
+    const tailDt = n.t + (n.d || 0) - t;
+    if (dt2 > travel) continue;
+    if (tailDt < -0.2 && !n.holding) continue;
+    const yFor = (dd) => hitY - (dd / travel) * (hitY + noteH);
+    const yHead = n.holding ? hitY : yFor(dt2);
+    const x = n.lane * laneW + (laneW - noteW) / 2;
+    const missed = n.grade === "miss";
+    const zoned = zones.some(z => n.t >= z.start && n.t < z.end);
+    // hold tail
+    if (n.d > 0) {
+      const yTail = yFor(tailDt);
+      const tw = noteW * 0.42;
+      cx.globalAlpha = missed ? 0.18 : n.holding ? 0.85 : 0.45;
+      cx.fillStyle = THEME.laneColors[n.lane];
+      roundRect(x + (noteW - tw) / 2, yTail, tw, Math.max(2, yHead - yTail), 6);
+      cx.fill();
+    }
+    // head
+    cx.globalAlpha = missed ? 0.25 : 1;
+    cx.fillStyle = THEME.laneColors[n.lane];
+    roundRect(x, yHead - noteH / 2, noteW, noteH, 9);
+    cx.fill();
+    if (zoned && !missed) {
+      cx.globalAlpha = 0.9;
+      cx.strokeStyle = "#f5c34d"; cx.lineWidth = 2;
+      roundRect(x - 1, yHead - noteH / 2 - 1, noteW + 2, noteH + 2, 10);
+      cx.stroke();
+    }
+    if (!missed) {
+      cx.globalAlpha = 0.35;
+      cx.fillStyle = "#ffffff";
+      roundRect(x + 4, yHead - noteH / 2 + 3, noteW - 8, 5, 3);
+      cx.fill();
+    }
+    cx.globalAlpha = 1;
+  }
+}
+function roundRect(x, y, w, h, r) {
+  cx.beginPath();
+  cx.moveTo(x + r, y);
+  cx.arcTo(x + w, y, x + w, y + h, r);
+  cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r);
+  cx.arcTo(x, y, x + w, y, r);
+  cx.closePath();
+}
+
+/* pause / quit */
+$("pausebtn").addEventListener("click", () => {
+  if (!G.playing || G.paused) return;
+  G.paused = true; G.pausedAt = Audio2.now();
+  activePtr.clear();
+  for (const s of liveSources) { try { s.stop(); } catch (e) {} }
+  liveSources = [];
+  stopPairedAudio();
+  $("sync-open").style.display = (G.audioMode && G.song && G.song.source !== "audio") ? "" : "none";
+  for (const id of ["syncrow", "synchint", "clicksbtn", "clickshint"]) $(id).style.display = "none";
+  $("clicksbtn").textContent = "Note clicks: " + (G.noteClicks ? "On" : "Off");
+  $("sync-val").textContent = Math.round(pairOffset() * 1000) + " ms";
+  
+  $("pauseoverlay").classList.add("open");
+});
+$("resumebtn").addEventListener("click", () => {
+  if (!G.paused) return;
+  const gap = Audio2.now() - G.pausedAt;
+  G.startAt += gap; G.endAt += gap;
+  // re-arm scheduling from current position (skip anything already past)
+  G.song.tracks.forEach((tr, ti) => {
+    let i = G.schedIdx[ti];
+    // rewind pointer to first note not yet due, so nothing is double-skipped
+    while (i > 0 && tr.notes[i - 1].t > songTime()) i--;
+    while (i < tr.notes.length && tr.notes[i].t < songTime()) i++;
+    G.schedIdx[ti] = i;
+  });
+  G.paused = false;
+  if (G.audioMode) {
+    startPairedAudio(songTime());
+    if (G.clickTimes) { const t = songTime(); G.clickIdx = G.clickTimes.findIndex(ct => ct > t); if (G.clickIdx < 0) G.clickIdx = G.clickTimes.length; }
+  }
+  $("pauseoverlay").classList.remove("open");
+});
+async function nudgeSync(ms) {
+  const meta = SAVE.audioPair[G.song.id];
+  if (!meta) return;
+  meta.offset = (meta.offset || 0) + ms;
+  $("sync-val").textContent = meta.offset + " ms";
+  await Store.save(SAVE);
+}
+$("sync-open").addEventListener("click", () => {
+  $("sync-open").style.display = "none";
+  $("syncrow").style.display = "flex";
+  for (const id of ["synchint", "clicksbtn", "clickshint"]) $(id).style.display = "";
+});
+$("clicksbtn").addEventListener("click", () => {
+  G.noteClicks = !G.noteClicks;
+  $("clicksbtn").textContent = "Note clicks: " + (G.noteClicks ? "On" : "Off");
+});
+$("sync-minus").addEventListener("click", () => nudgeSync(-50));
+$("sync-plus").addEventListener("click", () => nudgeSync(50));
+$("quitbtn").addEventListener("click", () => { stopPlay(); show("scr-songs"); renderSongs(); });
+
+function stopPlay() {
+  G.playing = false; G.paused = false;
+  activePtr.clear();
+  stopPairedAudio();
+  clearInterval(G.schedTimer);
+  cancelAnimationFrame(G.raf);
+  for (const s of liveSources) { try { s.stop(); } catch (e) {} }
+  liveSources = [];
+  $("pauseoverlay").classList.remove("open");
+  $("scr-play").classList.remove("ingame");
+}
+
+async function endPlay() {
+  const res = CORE.finishRun(G.run);
+  res.at = Date.now();
+  stopPlay();
+  // record — this results object is the Cadence Heroes hook
+  const partial = G.playLen != null;
+  const k = bestKey(G.song.id, G.diff, G.lanes);
+  const prev = SAVE.best[k];
+  const isBest = !partial && (!prev || res.score > prev.score);
+  if (isBest) SAVE.best[k] = { score: res.score, grade: res.grade, accuracy: res.accuracy };
+  let evtLine = "";
+  if (G.eventIdx != null && !partial) {
+    const accMille = Math.round(res.accuracy * 1000);
+    const prevEv = SAVE.evtBest[G.eventIdx];
+    if (!prevEv || res.score > prevEv.score) {
+      SAVE.evtBest[G.eventIdx] = { score: res.score, accMille, combo: res.maxCombo, grade: res.grade };
+      evtLine = "event best";
+    }
+    if (EvtNet.ok && SAVE.evtName && EvtNet.healthy !== false) {
+      const eb = SAVE.evtBest[G.eventIdx];
+      EvtNet.submit(G.eventIdx, SAVE.pid,
+        { name: SAVE.evtName, score: eb.score, accMille: eb.accMille, combo: eb.combo, grade: eb.grade, at: Date.now() })
+        .then(r => {
+          EvtNet.markHealthy(r.ok);
+          toast(r.ok ? "Score submitted to the weekly board."
+                     : "Event best saved — the shared board is unreachable here, so grab your share code from the event screen.");
+        });
+    } else if (EvtNet.healthy === false && evtLine) {
+      toast("Event best saved — grab your share code from the event screen.");
+    } else if (evtLine) {
+      toast(EvtNet.ok ? "New event best — set a board name on the event screen to post it."
+                      : "New event best — share your code from the event screen.");
+    }
+  }
+  await Store.save(SAVE);
+  // results screen
+  $("res-grade").textContent = res.grade;
+  $("res-song").textContent = (G.eventIdx != null ? "Weekly Event · " : "")
+    + G.song.title + " · " + G.diff[0].toUpperCase() + G.diff.slice(1)
+    + (partial ? " · first " + fmtTime(G.playLen) : "");
+  $("rv-score").textContent = res.score;
+  $("rv-acc").textContent = Math.floor(res.accuracy * 100) + "%";
+  $("rv-perf").textContent = res.perfect;
+  $("rv-good").textContent = res.good;
+  $("rv-miss").textContent = res.miss;
+  $("rv-combo").textContent = res.maxCombo;
+  const bits = [];
+  if (res.holdsTotal > 0) bits.push("Holds " + res.holdsDone + "/" + res.holdsTotal
+    + (res.holdsPartial ? " (+" + res.holdsPartial + " partial, avg "
+       + Math.round(res.holdPartialAvg * 100) + "%)" : ""));
+  if (res.crescendoZones > 0) bits.push("Crescendos perfected " + res.crescendoPerfect + "/" + res.crescendoZones);
+  if (res.fortissimos > 0) bits.push("Fortissimo ×" + res.fortissimos);
+  $("res-extra").textContent = bits.join(" · ");
+  $("res-newbest").textContent = partial
+    ? "Partial run — best scores track full-length plays"
+    : (isBest ? "★ New personal best" : "");
+  show("scr-results");
+}
+$("btn-retry").addEventListener("click", () => startPlay(G.song, G.diff, G.playLen, G.eventIdx));
+$("btn-tosongs").addEventListener("click", () => { show("scr-songs"); renderSongs(); });
+
+/* =====================================================================
+   CALIBRATION — median of tap-vs-tick deltas becomes SAVE.offset
+   ===================================================================== */
+const Calib = { active: false, ticks: [], taps: [], timer: null, sources: [] };
+function stopCalibAudio() {
+  clearTimeout(Calib.timer);
+  for (const s of Calib.sources) { try { s.stop(); } catch (e) {} }
+  Calib.sources = [];
+}
+function stopCalib() { // full cancel — restart, or leaving the screen
+  if (!Calib.active && !Calib.sources.length) return;
+  Calib.active = false;
+  stopCalibAudio();
+  $("calib-big").textContent = "Tap on every tick";
+  $("calib-count").textContent = "Your device's audio delay gets measured and applied to scoring.";
+}
+$("btn-calib").addEventListener("click", () => show("scr-calib"));
+$("calib-start").addEventListener("click", startCalib);
+$("calib-circle").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  if (!Calib.active) return;
+  Calib.taps.push(Audio2.now());
+  $("calib-circle").textContent = "♪";
+  setTimeout(() => $("calib-circle").textContent = "👆", 120);
+  $("calib-count").textContent = Calib.taps.length + " / 10 taps";
+  if (Calib.taps.length >= 10) finishCalib();
+});
+function startCalib() {
+  stopCalib(); // pressing Start mid-run = clean restart, never overlapping series
+  Audio2.ensure();
+  Calib.active = true; Calib.ticks = []; Calib.taps = [];
+  $("calib-result").textContent = "";
+  $("calib-big").textContent = "Tap on every tick";
+  $("calib-count").textContent = "Listen first — ticks start now.";
+  const start = Audio2.now() + 0.6, interval = 0.6;
+  for (let i = 0; i < 24; i++) {
+    const t = start + i * interval;
+    Calib.sources.push(Audio2.tick(t, i % 4 === 0));
+    Calib.ticks.push(t);
+  }
+  Calib.timer = setTimeout(() => { if (Calib.active) finishCalib(); }, 26 * interval * 1000);
+}
+async function finishCalib() {
+  Calib.active = false; stopCalibAudio();
+  if (Calib.taps.length < 6) {
+    $("calib-result").textContent = "Not enough taps to measure — try again.";
+    return;
+  }
+  const deltas = Calib.taps.map(tap => {
+    let best = Infinity;
+    for (const tick of Calib.ticks) {
+      const d = tap - tick;
+      if (Math.abs(d) < Math.abs(best)) best = d;
+    }
+    return best;
+  }).filter(d => Math.abs(d) < 0.25);
+  if (deltas.length < 6) {
+    $("calib-result").textContent = "Taps were too far from the ticks — try again.";
+    return;
+  }
+  deltas.sort((a, b) => a - b);
+  const median = deltas[Math.floor(deltas.length / 2)];
+  SAVE.offset = median; SAVE.calibrated = true;
+  await Store.save(SAVE);
+  $("calib-big").textContent = "Calibrated";
+  $("calib-result").textContent = "Your offset: " + Math.round(median * 1000) +
+    " ms. Applied to all scoring. Recalibrate any time you switch headphones or device.";
+}
+
+/* =====================================================================
+   IMPORT
+   ===================================================================== */
+$("btn-import").addEventListener("click", () => show("scr-import"));
+$("file-midi").addEventListener("change", async (e) => {
+  const files = e.target.files; e.target.value = "";
+  await runImport(files, async (f) => ({
+    song: CORE.parseMIDI(await f.arrayBuffer(), f.name.replace(/\.(mid|midi)$/i, ""))
+  }));
+});
+async function decodeToMono(file) {
+  const buf = await Audio2.ctx.decodeAudioData(await file.arrayBuffer());
+  const len = buf.length, chs = buf.numberOfChannels;
+  const mono = new Float32Array(len);
+  for (let c = 0; c < chs; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) mono[i] += d[i] / chs;
+  }
+  return { buf, mono };
+}
+$("file-audio").addEventListener("change", async (e) => {
+  const files = e.target.files; e.target.value = "";
+  if (!files || !files.length) return;
+  Audio2.ensure();
+  toast(files.length === 1
+    ? "Analyzing the recording — this can take ~10 seconds on long songs…"
+    : "Analyzing " + files.length + " recordings — a few seconds each…");
+  let warnedVolatile = false;
+  await runImport(files, async (f) => {
+    const { buf, mono } = await decodeToMono(f);
+    const onsets = CORE.detectOnsets(mono, buf.sampleRate);
+    const percHits = CORE.detectPercussion(mono, buf.sampleRate);
+    const boomHits = CORE.detectBooms(mono, buf.sampleRate);
+    const sustain = CORE.sustainEnvelope(mono, buf.sampleRate);
+    const song = CORE.audioSongFromOnsets(onsets, buf.duration,
+      f.name.replace(/\.(mp3|m4a|wav|aac|ogg|flac)$/i, ""), f.name + ":" + f.size,
+      percHits, boomHits, sustain);
+    return {
+      song,
+      advisory: CORE.importAdvisory(onsets, buf.duration),
+      // the recording is stored only once the chart is safely in the library
+      commit: async () => {
+        const r = await AudioStore.put(song.id, f);
+        cacheDecoded(song.id, buf);
+        SAVE.audioPair[song.id] = { name: f.name, size: f.size, offset: 0, durable: r.durable, builtin: true };
+        await Store.save(SAVE);
+        if (!r.durable && !warnedVolatile) {
+          warnedVolatile = true;
+          toast("This viewer can't keep audio files — re-pick the recordings next session.");
+        }
+      },
+      rollback: async () => { decodedCache.delete(song.id); await AudioStore.del(song.id); }
+    };
+  });
+});
+$("file-forge").addEventListener("change", async (e) => {
+  const files = e.target.files; e.target.value = "";
+  await runImport(files, async (f) => ({
+    song: CORE.parseForgeJSON(JSON.parse(await f.text()), f.name)
+  }));
+});
+const IMPORT_BUDGET = 400000;
+/* Silent library insert. Returns a result instead of toasting so a batch can
+   report once at the end rather than once per file. */
+async function addSong(song) {
+  const i = SAVE.imports.findIndex(s => s.id === song.id);
+  if (i >= 0) {
+    SAVE.imports[i] = song;
+    chartCache.clear();
+    await Store.save(SAVE);
+    return { replaced: true, persisted: true };
+  }
+  const size = JSON.stringify(song).length;
+  const totalAfter = SAVE.imports.reduce((s, x) => s + JSON.stringify(x).length, 0) + size;
+  SAVE.imports.push(song);
+  chartCache.clear();
+  if (totalAfter > IMPORT_BUDGET) return { replaced: false, persisted: false };
+  await Store.save(SAVE);
+  return { replaced: false, persisted: true };
+}
+/* Batch importer shared by all three pickers. Files are processed ONE AT A
+   TIME on purpose: decoding several recordings at once would hold every PCM
+   buffer in memory simultaneously. loadOne(file) returns { song, advisory,
+   commit, rollback } -- commit runs only once the song is in the library, and
+   rollback undoes stored audio if the load failed partway. One bad file never
+   ends the batch. */
+async function runImport(files, loadOne) {
+  const list = Array.from(files || []);
+  if (!list.length) return;
+  const res = { added: 0, replaced: 0, sessionOnly: 0, failed: [], advisories: [], lastTitle: "" };
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    if (list.length > 1) toast("Importing " + (i + 1) + " of " + list.length + ": " + f.name);
+    let loaded = null;
+    try {
+      loaded = await loadOne(f);
+      if (!loaded || !loaded.song) { res.failed.push(f.name); continue; }
+      const r = await addSong(loaded.song);
+      if (loaded.commit) await loaded.commit();
+      if (r.replaced) res.replaced++; else res.added++;
+      if (!r.persisted) res.sessionOnly++;
+      if (loaded.advisory) res.advisories.push(loaded.advisory);
+      res.lastTitle = loaded.song.title;
+    } catch (err) {
+      if (loaded && loaded.rollback) { try { await loaded.rollback(); } catch (e2) {} }
+      res.failed.push(f.name + " — " + ((err && err.message) || "unreadable"));
+    }
+  }
+  show("scr-songs"); renderSongs();
+  reportImport(res, list.length);
+}
+function reportImport(res, total) {
+  const kept = res.added + res.replaced;
+  const bits = [];
+  if (total === 1 && kept === 1)
+    bits.push((res.replaced ? "Updated in your library: " : "Added to library: ") + res.lastTitle);
+  else if (kept) {
+    bits.push(kept === 1 ? "Added 1 song" : "Added " + kept + " songs");
+    if (res.replaced) bits.push(res.replaced + " replaced an earlier import");
+  }
+  if (res.sessionOnly)
+    bits.push(res.sessionOnly + " kept for this session only — import storage is full. Remove old imports in Settings.");
+  if (res.failed.length) bits.push(res.failed.length + " couldn't be read");
+  toast(bits.length ? bits.join(" · ") : "Nothing imported.");
+  let delay = 2600;
+  if (res.failed.length && res.failed.length <= 3) {
+    setTimeout(() => toast("Skipped: " + res.failed.join("; ")), delay);
+    delay += 2600;
+  }
+  if (res.advisories.length === 1) setTimeout(() => toast(res.advisories[0]), delay);
+  else if (res.advisories.length > 1)
+    setTimeout(() => toast(res.advisories.length + " recordings may chart imprecisely — a paired MIDI would chart those better."), delay);
+}
+$("lib-select").addEventListener("click", () => {
+  if (LIB.selecting) { exitSelect(); renderSongs(); return; }
+  if (!SAVE.imports.length) { toast("Nothing imported yet — bundled songs stay put."); return; }
+  LIB.selecting = true; LIB.sel.clear(); LIB.confirming = false;
+  $("lib-select").textContent = "Done";
+  renderSongs();
+});
+$("lib-remove").addEventListener("click", async () => {
+  if (!LIB.sel.size) return;
+  if (!LIB.confirming) {   // two taps, so a stray tap can't delete anything
+    LIB.confirming = true;
+    renderSelectBar();
+    setTimeout(() => { if (LIB.confirming) { LIB.confirming = false; renderSelectBar(); } }, 4000);
+    return;
+  }
+  const ids = [...LIB.sel];
+  const n = await removeImports(ids);
+  exitSelect();
+  renderSongs();
+  toast(n === 1 ? "Removed 1 song." : "Removed " + n + " songs.");
+});
+$("btn-clearimports").addEventListener("click", async () => {
+  const n = await removeImports(SAVE.imports.map(s => s.id));
+  exitSelect();
+  renderSettings();
+  toast(n ? "Removed all " + n + " imported songs." : "Nothing imported to remove.");
+});
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+$("btn-settings").addEventListener("click", () => { renderSettings(); show("scr-settings"); });
+function renderSettings() {
+  $("set-offset").textContent = SAVE.calibrated
+    ? "Current offset: " + Math.round(SAVE.offset * 1000) + " ms."
+    : "Not calibrated yet — scoring assumes zero delay, which is rarely true on phones.";
+  $("set-imports").textContent = SAVE.imports.length
+    ? SAVE.imports.length + " imported song" + (SAVE.imports.length > 1 ? "s" : "") + " in your library."
+    : "None yet.";
+  syncSeg("seg-speed", String(SAVE.speed));
+  syncSeg("seg-tapsfx", SAVE.tapSfx ? "on" : "off");
+  syncSeg("seg-lanes", String(activeLanes()));
+  syncSeg("seg-fort", SAVE.fortMode === "manual" ? "manual" : "auto");
+  $("card-lanes").style.display = (window.innerWidth >= 700 || activeLanes() > 4) ? "" : "none";
+}
+function syncSeg(id, val) {
+  document.querySelectorAll("#" + id + " .seg").forEach(s =>
+    s.classList.toggle("sel", s.dataset.v === val));
+}
+document.querySelectorAll("#seg-speed .seg").forEach(s =>
+  s.addEventListener("click", async () => {
+    SAVE.speed = parseFloat(s.dataset.v); syncSeg("seg-speed", s.dataset.v);
+    await Store.save(SAVE);
+  }));
+document.querySelectorAll("#seg-fort .seg").forEach(s =>
+  s.addEventListener("click", async () => {
+    SAVE.fortMode = s.dataset.v; syncSeg("seg-fort", s.dataset.v);
+    await Store.save(SAVE);
+  }));
+document.querySelectorAll("#seg-lanes .seg").forEach(s =>
+  s.addEventListener("click", async () => {
+    SAVE.lanes = parseInt(s.dataset.v, 10); syncSeg("seg-lanes", s.dataset.v);
+    await Store.save(SAVE);
+  }));
+document.querySelectorAll("#seg-tapsfx .seg").forEach(s =>
+  s.addEventListener("click", async () => {
+    SAVE.tapSfx = s.dataset.v === "on"; syncSeg("seg-tapsfx", s.dataset.v);
+    await Store.save(SAVE);
+  }));
+
+/* =====================================================================
+   WEEKLY EVENT — shared board (artifact storage) + share-code fallback
+   ===================================================================== */
+const EvtNet = (() => {
+  const ok = typeof window !== "undefined" && !!window.storage &&
+             typeof window.storage.get === "function";
+  const boardKey = (idx) => "cadence-board-" + idx;   // ONE shared key per event
+
+  async function readBoard(idx) {
+    try {
+      const r = await window.storage.get(boardKey(idx), true);
+      const arr = r && r.value ? JSON.parse(r.value) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      if (/not found|nokey|missing/i.test(String(e && e.message))) return [];
+      throw e;
+    }
+  }
+
+  async function submit(idx, pid, entry) {
+    if (!ok) return { ok: false, error: "shared storage unavailable in this copy" };
+    let lastErr = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        let rows = [];
+        try { rows = await readBoard(idx); } catch (e) { rows = []; }
+        const mine = rows.find(r => r.pid === pid);
+        if (mine && mine.score >= entry.score) return { ok: true };
+        const next = rows.filter(r => r.pid !== pid);
+        next.push({ pid, ...entry });
+        next.sort((a, b) => b.score - a.score);
+        const r2 = await window.storage.set(boardKey(idx), JSON.stringify(next.slice(0, 100)), true);
+        if (r2) return { ok: true };
+        lastErr = new Error("set returned no result");
+      } catch (e) { lastErr = e; }
+      await new Promise(r => setTimeout(r, 700));
+    }
+    return { ok: false, error: (lastErr && lastErr.message) || "unknown error" };
+  }
+
+  async function board(idx) {
+    if (!ok) return { ok: false, unavailable: true };
+    let lastErr = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const rows = await readBoard(idx);
+        rows.sort((a, b) => b.score - a.score);
+        return { ok: true, rows: rows.slice(0, 50) };
+      } catch (e) { lastErr = e; }
+      await new Promise(r => setTimeout(r, 700));
+    }
+    return { ok: false, error: (lastErr && lastErr.message) || "unknown error" };
+  }
+
+  async function diagnose(pid) {
+    const out = [];
+    const probe = async (label, fn) => {
+      try { await fn(); out.push(label + ": OK"); }
+      catch (e) { out.push(label + ": FAIL — " + ((e && e.message) || e)); }
+    };
+    if (!ok) { out.push("window.storage: MISSING"); return out; }
+    out.push("window.storage: present");
+    const k = "cadence-diag-" + pid;
+    await probe("localStorage set", async () => localStorage.setItem(k, "1"));
+    await probe("localStorage get", async () => { if (localStorage.getItem(k) !== "1") throw new Error("value missing"); });
+    await probe("personal set", () => window.storage.set(k, "1"));
+    await probe("personal get", () => window.storage.get(k));
+    await probe("shared set",   () => window.storage.set(k, "1", true));
+    await probe("shared get",   () => window.storage.get(k, true));
+    await probe("shared list",  () => window.storage.list("cadence-diag-", true));
+    await probe("indexedDB", () => new Promise((res, rej) => {
+      try {
+        const req = indexedDB.open("cadence-diag", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("t");
+        req.onerror = () => rej(req.error || new Error("open failed"));
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("t", "readwrite");
+          tx.objectStore("t").put(new Blob(["cadence"]), "probe");
+          tx.oncomplete = () => { db.close(); res(); };
+          tx.onerror = () => { db.close(); rej(tx.error || new Error("write failed")); };
+        };
+      } catch (e) { rej(e); }
+    }));
+    return out;
+  }
+
+  let healthy = null; // null = unknown, learned from first real attempt
+  return { ok, submit, board, diagnose,
+           markHealthy(v) { healthy = v; }, get healthy() { return healthy; } };
+})();
+
+function curEvent() {
+  const ev = CORE.eventForDate(Date.now());
+  return { ...ev, song: CORE.BUNDLED[ev.songIdx] };
+}
+function evLabel(diff) { return diff[0].toUpperCase() + diff.slice(1); }
+function evEndsIn(ev) {
+  const ms = Math.max(0, ev.endsAt - Date.now());
+  const d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+  return d > 0 ? d + "d " + h + "h" : h + "h";
+}
+function updateEventCard() {
+  const ev = curEvent();
+  $("evt-line").textContent = ev.song.title + " · " + evLabel(ev.diff) + " · ends in " + evEndsIn(ev);
+}
+$("btn-event").addEventListener("click", () => {
+  Audio2.ensure();
+  if (!SAVE.calibrated) { show("scr-calib"); toast("One quick calibration first — it makes scoring fair on your device."); return; }
+  renderEvent(); show("scr-event");
+});
+function myEvtBest(idx) { return SAVE.evtBest[idx] || null; }
+
+async function renderEvent() {
+  const ev = curEvent();
+  $("ev-song").textContent = ev.song.title + " — " + evLabel(ev.diff);
+  $("ev-meta").textContent = ev.song.composer + " · full song · same chart for everyone · ends in " + evEndsIn(ev);
+  const mb = myEvtBest(ev.idx);
+  $("ev-mybest").textContent = mb
+    ? "Your best this week: " + mb.grade + " · " + mb.score.toLocaleString() + " · " + (mb.accMille / 10).toFixed(1) + "%"
+    : "No run yet this week.";
+  $("ev-name").value = SAVE.evtName;
+  $("ev-namecard").style.display = EvtNet.ok ? "" : "none";
+  $("ev-post").style.display = (EvtNet.ok && mb && SAVE.evtName) ? "" : "none";
+  $("ev-mycode").textContent = mb && SAVE.evtName
+    ? CORE.makeShareCode(ev.idx, SAVE.evtName, mb.score, mb.accMille, mb.combo)
+    : (mb ? "Set a board name above to generate your share code." : "Play the event to get your share code.");
+  renderBoard(ev);
+}
+async function renderBoard(ev) {
+  const el = $("ev-board");
+  const friends = (SAVE.friends[ev.idx] || []).map(f => ({ ...f, friend: true }));
+  if (!EvtNet.ok) {
+    el.innerHTML = friends.length ? boardHTML(friends) :
+      "Shared board isn't available in this copy — trade share codes below.";
+    return;
+  }
+  el.textContent = "Loading board…";
+  const res = await EvtNet.board(ev.idx);
+  EvtNet.markHealthy(!!res.ok);
+  if (!res.ok) {
+    el.innerHTML = (friends.length ? boardHTML(friends) : "") +
+      "<div style='margin-top:6px'>The shared board isn't reachable in this viewer, so competition runs on share codes below. Your scores are safe on this device.</div>" +
+      '<div style="margin-top:4px;font-size:11px;color:#565d85">(' + esc(res.error || "storage unavailable") + ")</div>";
+    return;
+  }
+  const all = res.rows.concat(friends).sort((a, b) => b.score - a.score);
+  el.innerHTML = all.length ? boardHTML(all) : "No scores yet this week — set the pace.";
+}
+function boardHTML(rows) {
+  return rows.slice(0, 50).map((r, i) =>
+    `<div style="display:flex;gap:8px;padding:3px 0;font-size:13.5px;color:var(--text)">
+      <span style="width:24px;color:var(--dim)">${i + 1}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(r.name)}${r.friend ? ' <span style="color:#3fc9b0;font-size:10.5px">CODE</span>' : ""}</span>
+      <span style="color:var(--gold);font-weight:700">${(+r.score).toLocaleString()}</span>
+      <span style="width:52px;text-align:right;color:var(--dim)">${r.accMille != null ? (r.accMille / 10).toFixed(1) + "%" : ""}</span>
+    </div>`).join("");
+}
+$("ev-refresh").addEventListener("click", () => renderBoard(curEvent()));
+$("ev-diag").addEventListener("click", async () => {
+  $("ev-diagout").textContent = "Running probes…";
+  const res = await EvtNet.diagnose(SAVE.pid || "x");
+  $("ev-diagout").textContent = res.join("\n");
+});
+$("ev-post").addEventListener("click", async () => {
+  const ev = curEvent(); const mb = myEvtBest(ev.idx);
+  if (!mb || !SAVE.evtName) return;
+  $("ev-post").disabled = true;
+  const r = await EvtNet.submit(ev.idx, SAVE.pid,
+    { name: SAVE.evtName, score: mb.score, accMille: mb.accMille, combo: mb.combo, grade: mb.grade, at: Date.now() });
+  $("ev-post").disabled = false;
+  toast(r.ok ? "Your best is on the board." : "Board post failed: " + (r.error || "unknown"));
+  if (r.ok) renderBoard(ev);
+});
+$("ev-savename").addEventListener("click", async () => {
+  const clean = $("ev-name").value.replace(/[^A-Za-z0-9_]/g, "").slice(0, 14);
+  if (!clean) { toast("Name needs at least one letter, number, or _"); return; }
+  SAVE.evtName = clean; $("ev-name").value = clean;
+  await Store.save(SAVE);
+  toast("Board name saved: " + clean);
+  const ev = curEvent(); const mb = myEvtBest(ev.idx);
+  if (mb && EvtNet.ok && EvtNet.healthy !== false) {
+    const r = await EvtNet.submit(ev.idx, SAVE.pid,
+      { name: SAVE.evtName, score: mb.score, accMille: mb.accMille, combo: mb.combo, grade: mb.grade, at: Date.now() });
+    EvtNet.markHealthy(r.ok);
+    toast(r.ok ? "Your best this week is on the board."
+               : "Name saved — it appears in your share code.");
+  } else if (mb) {
+    toast("Name saved — it appears in your share code.");
+  }
+  renderEvent();
+});
+$("ev-addfriend").addEventListener("click", async () => {
+  const p = CORE.parseShareCode($("ev-friendcode").value);
+  if (!p) { toast("That code doesn't check out — ask them to copy it exactly."); return; }
+  const ev = curEvent();
+  if (p.idx !== ev.idx) { toast("That code is from a different week's event."); return; }
+  const list = SAVE.friends[ev.idx] = SAVE.friends[ev.idx] || [];
+  const existing = list.find(f => f.name === p.name);
+  if (existing) { if (p.score > existing.score) Object.assign(existing, { score: p.score, accMille: p.accMille, combo: p.combo }); }
+  else list.push({ name: p.name, score: p.score, accMille: p.accMille, combo: p.combo });
+  $("ev-friendcode").value = "";
+  await Store.save(SAVE);
+  toast("Added " + p.name + " to your board view.");
+  renderBoard(ev);
+});
+$("ev-play").addEventListener("click", () => {
+  const ev = curEvent();
+  startPlay(ev.song, ev.diff, null, ev.idx);
+});
+
+/* =====================================================================
+   TITLE ACTIONS + BOOT
+   ===================================================================== */
+$("btn-arcade").addEventListener("click", () => {
+  Audio2.ensure();
+  if (!SAVE.calibrated) { show("scr-calib"); toast("One quick calibration first — it makes scoring fair on your device."); }
+  else { show("scr-songs"); renderSongs(); }
+});
+$("btn-heroes").addEventListener("click", () => {
+  toast("Cadence Heroes is in development — a separate game with its own progression.");
+});
+(async function boot() {
+  const loaded = await Store.load();
+  if (loaded && loaded.version === 1) SAVE = Object.assign(SAVE, loaded);
+  if (!SAVE.pid) {
+    SAVE.pid = Array.from({ length: 8 }, () => "abcdefghjkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 31)]).join("");
+    await Store.save(SAVE);
+  }
+  updateEventCard();
+})();
+</script>
+</body>
+</html>
