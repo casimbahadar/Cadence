@@ -1,7 +1,7 @@
 /* Cadence SHELL tests — the parts cadence.tests.mjs can't reach: DOM flow,
    file pickers, IndexedDB lifecycle, pointer input, library UI.
 
-   Run:  node shell.tests.mjs          (needs jsdom in this directory)
+   Run:  node tests/shell.tests.mjs    (needs jsdom — npm install at the root)
    Exits non-zero if anything fails.
 
    Covers four areas, each of which had a real bug caught by these tests:
