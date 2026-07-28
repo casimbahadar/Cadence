@@ -3114,8 +3114,23 @@ async function endPlay() {
     : (isBest ? "★ New personal best" : "");
   show("scr-results");
 }
-$("btn-retry").addEventListener("click", () => startPlay(G.song, G.diff, G.playLen, G.eventIdx));
-$("btn-tosongs").addEventListener("click", () => { show("scr-songs"); renderSongs(); });
+/* The results screen is the one place a run can strand a player, so its two
+   buttons answer pointerup as well as click. A song can finish while a finger
+   is still down on a pad — normal on Hard, where holds run to the last bar —
+   and stopPlay() then display:none's the pads and the play screen out from
+   under that live touch. WebKit can respond by not synthesising click again for
+   the life of the document: every later tap does nothing, backgrounding does
+   not clear it, and only a reload gets the player out. pointerup still fires,
+   so it is the way out whether or not that is the exact mechanism.
+   Both paths are deduped, since a healthy browser fires pointerup AND click. */
+function tapBind(el, fn) {
+  let last = 0;
+  const run = () => { const now = Date.now(); if (now - last < 400) return; last = now; fn(); };
+  el.addEventListener("pointerup", (e) => { e.preventDefault(); run(); });
+  el.addEventListener("click", run);
+}
+tapBind($("btn-retry"), () => startPlay(G.song, G.diff, G.playLen, G.eventIdx));
+tapBind($("btn-tosongs"), () => { show("scr-songs"); renderSongs(); });
 
 /* =====================================================================
    CALIBRATION — median of tap-vs-tick deltas becomes SAVE.offset
