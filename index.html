@@ -3122,11 +3122,25 @@ async function endPlay() {
    the life of the document: every later tap does nothing, backgrounding does
    not clear it, and only a reload gets the player out. pointerup still fires,
    so it is the way out whether or not that is the exact mechanism.
-   Both paths are deduped, since a healthy browser fires pointerup AND click. */
+   Both paths are deduped, since a healthy browser fires pointerup AND click.
+
+   The pointerup path must not be looser than click, or it introduces the very
+   accident this screen is prone to: the pads sit where these buttons sit, so a
+   finger still down from the last hold is over Play again the moment results
+   appear, and lifting it would fire a button the player never pressed. So this
+   mirrors click's contract — the press has to land on the same element, and
+   anything that starts elsewhere or gets cancelled is not a tap. */
 function tapBind(el, fn) {
-  let last = 0;
+  let last = 0, downOn = null;
   const run = () => { const now = Date.now(); if (now - last < 400) return; last = now; fn(); };
-  el.addEventListener("pointerup", (e) => { e.preventDefault(); run(); });
+  el.addEventListener("pointerdown", (e) => { downOn = e.pointerId; });
+  el.addEventListener("pointercancel", () => { downOn = null; });
+  el.addEventListener("pointerup", (e) => {
+    if (downOn !== e.pointerId) { downOn = null; return; }  // released here, but pressed somewhere else
+    downOn = null;
+    e.preventDefault();
+    run();
+  });
   el.addEventListener("click", run);
 }
 tapBind($("btn-retry"), () => startPlay(G.song, G.diff, G.playLen, G.eventIdx));
