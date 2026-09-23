@@ -12,8 +12,9 @@ to match your repository name)*
 
 ## What it does
 
-Notes fall down four lanes and you tap them as they cross the line. 176 songs are
-built in, and you can add your own three different ways.
+Notes fall down four lanes and you tap them as they cross the line. **176 songs
+are built in** — 24 hand-arranged public-domain works and 152 original
+compositions — and you can add your own three different ways.
 
 - **Three difficulties** per song, generated from the source material rather than
   hand-authored — Easy, Normal and Hard are different selections of the same
@@ -23,7 +24,9 @@ built in, and you can add your own three different ways.
 - **Hold notes** where the music actually sustains, with prorated credit if you
   let go early to reach something else.
 - **Weekly event** — a rotating song and difficulty, the same for everyone, with
-  shareable score codes.
+  shareable score codes. The rotation walks the entire 176-song catalogue.
+- **Search** the library by title or composer, because 176 songs is a lot to page
+  through.
 - **Everything is local.** Nothing is uploaded, ever. See [Privacy](#privacy).
 
 ## Bringing your own music
@@ -88,9 +91,8 @@ file.
 ## Development
 
 There is no build step. `index.html` is the entire application; edit it and
-reload. The only other files it serves are `manifest.webmanifest` and `icons/`,
-which exist so the game can be installed to a home screen — the game itself
-runs from the single file.
+reload. It is ~2.7MB, most of which is packed song data — about 200KB over the
+wire once the server gzips it.
 
 ```bash
 npm install          # jsdom, for the shell tests only
@@ -101,11 +103,19 @@ npm run serve        # http://localhost:8080
 | Command | What it checks |
 |---|---|
 | `npm run test:core` | Chart generation, grading, parsing, detectors — 762 assertions, no DOM |
-| `npm run test:shell` | Import, deletion, storage, pointer input in a headless browser — 62 assertions |
+| `npm run test:shell` | Import, deletion, storage, pointer input, the bundled library in a headless browser — 91 assertions |
 | `npm run metrics <file>` | Chart quality against a real recording (needs `ffmpeg`) |
 | `npm run core-hash` | CORE byte length and sha256 |
 
 See [`tests/TESTS.md`](tests/TESTS.md) for what each layer catches and why.
+
+### Where the songs live
+
+The 24 public-domain arrangements sit inside CORE. The 152 originals sit
+*outside* it, as `LIB_PACKED` — delta-encoded milliseconds parsed from a JSON
+string, with each song's notes decoded lazily the first time something asks for
+them. That split is deliberate: CORE is shared with Cadence Heroes, which has its
+own soundtrack, so song data is treated as content rather than engine logic.
 
 ### The CORE block
 
@@ -116,23 +126,44 @@ with **Cadence Heroes**, the RPG built on the same engine. Any change inside the
 markers has to be mirrored there; `npm run core-hash` is how both sides prove
 their copies match.
 
+## Icons and home-screen install
+
+`icons/` holds the generated icon set and `manifest.webmanifest` describes the
+installed app. Saved to a phone home screen, Cadence launches without browser
+chrome, portrait-locked, on its own dark background.
+
+The favicon is *also* inlined into `index.html` as an SVG data URI, so the file
+still carries its identity when opened standalone with no server and no
+`icons/` folder next to it. Missing PNGs degrade to that inline icon rather than
+to nothing.
+
+To change the mark, replace `tools/icon-source.png` (1024x1024) and re-run the
+generator — it derives every size from that one file:
+
+```bash
+python3 tools/make-icons.py      # needs Pillow
+```
+
+It does two things the source can't do for itself. Artwork usually arrives as a
+rounded tile on a background, but iOS and Android apply their *own* rounded
+mask, so a pre-rounded source shows its corners inside theirs — the generator
+zooms and centre-crops to full bleed and lets the platform do the only rounding.
+It also builds a separate maskable variant with the whole picture inside
+Android's 80% safe zone, so an adaptive crop can't cut anything important.
+
+One caveat worth testing rather than trusting: on iOS, a site saved to the home
+screen has historically used a **separate storage bucket** from Safari, so scores
+and settings made in Safari may not appear in the home-screen copy. Check before
+relying on it.
+
 ## Deploying
 
 GitHub Pages serves this as-is. Settings → Pages → deploy from your default
 branch, root folder. `index.html` is at the root, and `.nojekyll` stops Jekyll
-from touching anything.
-
-Note that the Pages URL is case-sensitive: for a repository named `Cadence` the
-site is at `/Cadence/`, and `/cadence/` returns 404.
-
-Installing to a home screen uses `manifest.webmanifest` and `icons/`. The
-favicon is also inlined as a `data:` URI in `index.html`, so the tab icon
-survives even if the icon files are missing; `icons/favicon.svg` is the same
-artwork kept as an editable source.
+from touching anything — including the `icons/` folder and the manifest, which
+must be served alongside `index.html` for home-screen installs to pick them up.
 
 ## Music
-
-176 songs ship with the game, in two groups.
 
 **24 arrangements of public-domain works**, sequenced for this project:
 
@@ -146,28 +177,25 @@ Ambush from Ten Sides
 The underlying compositions are out of copyright; the arrangements are original
 to this project.
 
-**152 original compositions** written in [Musical Forge
-Studio](https://github.com/casimbahadar/Musical-Forge-Studio) — 52 Lumoria
-themes and a 100-track Forge Collection. These are original work, not
-arrangements of anything.
+**152 original compositions**, written in
+[Musical Forge Studio](https://github.com/casimbahadar/Musical-Forge-Studio) —
+52 Lumoria themes and a 100-piece Forge Collection. These are original works and
+are **not** public domain; they are the author's copyright. See
+[License](#license), because a repository licence covers the music in this file
+as well as the code.
 
 Music you import yourself is yours, stays on your device, and is never
 redistributed by this app.
 
-### How the library is stored
-
-The 152 originals are packed as delta-encoded integers rather than note objects
-— about 2.5 MB raw, roughly 150 KB over the wire once gzipped. Decoding all of
-them up front would cost ~320 ms, so each song's notes are built lazily the
-first time something asks for them; the library screen only ever reads titles
-and durations.
-
-This block sits deliberately *outside* the `CORE` markers. Song data is content,
-not engine logic, so Cadence Heroes supplies its own soundtrack rather than
-inheriting this one.
-
 ## License
 
-Not yet chosen — see the note in the repository discussion. Until a `LICENSE`
-file is added, default copyright applies: the author retains all rights, and this
-code may be read but not reused, modified or redistributed.
+Not yet chosen. Until a `LICENSE` file is added, default copyright applies: the
+author retains all rights, and this may be read but not reused, modified or
+redistributed.
+
+Worth deciding deliberately rather than by habit, because `index.html` contains
+**152 original musical compositions** alongside the code. A permissive licence
+such as MIT would grant that music away on the same terms as the source — anyone
+could ship the songs in their own product. If the code and the music warrant
+different terms, they need separate licences, or the music needs separating from
+the repository. This is a note, not legal advice.
